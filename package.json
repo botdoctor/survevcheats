@@ -1,0 +1,41 @@
+{
+  "name": "survevgpt-local-research-harness",
+  "version": "0.1.0",
+  "description": "Localhost-only white-box gameplay security research harness.",
+  "main": "init.js",
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/verify-local-only.mjs",
+    "build": "vite build",
+    "watch": "chokidar 'src/**/*' -c 'npm run build'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/botdoctor/survevcheats.git"
+  },
+  "keywords": [
+    "Aimbot",
+    "xray",
+    "tracer",
+    "better",
+    "zoom",
+    "smoke/obstacle",
+    "opacity",
+    "autoloot",
+    "player",
+    "names",
+    "localhost",
+    "security-research"
+  ],
+  "author": "SurvevGPT",
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/botdoctor/survevcheats/issues"
+  },
+  "homepage": "https://github.com/botdoctor/survevcheats#readme",
+  "devDependencies": {
+    "chokidar-cli": "^3.0.0",
+    "vite": "^6.2.0",
+    "vite-plugin-banner": "^0.8.0"
+  }
+}
