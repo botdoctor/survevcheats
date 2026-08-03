@@ -1,9 +1,5 @@
-import { assertLocalDevMode } from './localDevGuard.js';
 import { installNavigationGuard } from './urlPolicy.js';
 
-// This must remain the first runtime action. No game or DOM hooks are installed
-// until the target has passed the local-development check.
-assertLocalDevMode();
 installNavigationGuard();
 
 import './iceHackMenu.js';

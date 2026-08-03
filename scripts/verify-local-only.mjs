@@ -30,6 +30,15 @@ if (failures.length) {
 
 const { ALLOWED_URLS } = await import(new URL('../src/urlPolicy.js', import.meta.url));
 if (ALLOWED_URLS.length === 0) throw new Error('Runtime allowlist cannot be empty.');
+const sourceFiles = (await walk(new URL('../src', import.meta.url).pathname)).filter((path) => path.endsWith('.js'));
+const allowlistDeclarations = [];
+for (const path of sourceFiles) {
+    const source = await readFile(path, 'utf8');
+    if (/\bALLOWED_URLS\s*=/.test(source)) allowlistDeclarations.push(path);
+}
+if (allowlistDeclarations.length !== 1 || !allowlistDeclarations[0].endsWith('/src/urlPolicy.js')) {
+    throw new Error(`ALLOWED_URLS must be declared only in src/urlPolicy.js: ${allowlistDeclarations.join(', ')}`);
+}
 
 const metadata = await readFile(new URL('../src/metadata.js', import.meta.url), 'utf8');
 const matchRules = [...metadata.matchAll(/^\/\/ @match\s+(.+)$/gm)].map((match) => match[1]);

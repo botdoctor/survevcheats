@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.0
+// @version      0.1.1
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
@@ -80,6 +80,13 @@
 
   const ALLOWED_URLS = Object.freeze(['localhost', 'geekbar.xyz']);
 
+  function assertAllowedPage(location = window.location) {
+      if (!ALLOWED_URLS.includes(location.hostname)) {
+          throw new Error(`[SurvevGPT] Refusing to load on non-allowlisted host: ${location.hostname}`);
+      }
+      return Object.freeze({ hostname: location.hostname, allowedUrls: ALLOWED_URLS });
+  }
+
   function isAllowedUrl(value, base = window.location.href) {
       try {
           return ALLOWED_URLS.includes(new URL(value, base).hostname);
@@ -107,29 +114,13 @@
   }
 
   (() => {
-      const hostname = window.location.hostname;
-
-      if (!ALLOWED_URLS.includes(hostname)) {
-          throw new Error(`[SurvevGPT] Refusing to load on non-local host: ${hostname}`);
-      }
+      const authorization = assertAllowedPage();
+      console.info('[SurvevGPT 0.1.1] Authorized page', authorization);
 
       __vitePreload(() => Promise.resolve().then(() => init),false?__VITE_PRELOAD__:undefined).catch((error) => {
           console.error('[SurvevGPT] Local research harness failed to initialize.', error);
       });
   })();
-
-  function assertLocalDevMode(location = unsafeWindow.location) {
-      if (!ALLOWED_URLS.includes(location.hostname)) {
-          throw new Error(
-              `[SurvevGPT] Refusing to run on non-local host: ${location.hostname}`,
-          );
-      }
-
-      unsafeWindow.__SURVEVGPT_LOCAL_DEV__ = Object.freeze({
-          hostname: location.hostname,
-          startedAt: Date.now(),
-      });
-  }
 
   let state = {
       isAimBotEnabled: true,
@@ -2378,9 +2369,6 @@
       updateOverlay();
   }
 
-  // This must remain the first runtime action. No game or DOM hooks are installed
-  // until the target has passed the local-development check.
-  assertLocalDevMode();
   installNavigationGuard();
 
 

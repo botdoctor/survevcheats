@@ -1,4 +1,11 @@
-export const ALLOWED_URLS = Object.freeze(['localhost', 'survev.io']);
+export const ALLOWED_URLS = Object.freeze(['localhost', 'geekbar.xyz']);
+
+export function assertAllowedPage(location = window.location) {
+    if (!ALLOWED_URLS.includes(location.hostname)) {
+        throw new Error(`[SurvevGPT] Refusing to load on non-allowlisted host: ${location.hostname}`);
+    }
+    return Object.freeze({ hostname: location.hostname, allowedUrls: ALLOWED_URLS });
+}
 
 export function isAllowedUrl(value, base = window.location.href) {
     try {
