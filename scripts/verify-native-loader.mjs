@@ -23,6 +23,7 @@ for (const grant of ['GM_getValue', 'GM_setValue', 'GM_deleteValue']) {
 const runtime = nativeLoaderRuntime.toString();
 for (const required of [
     '__SURVEVGPT_NATIVE_STATUS__',
+    '__SURVEVGPT_AUTHORIZATION__',
     'stock-client-blocked',
     'waiting-for-dom',
     'payload-injected',

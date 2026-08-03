@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.10. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.11. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -103,13 +103,48 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability filter. A target 
 
 ### Trust Lab
 
-Trust Lab is available only on `localhost` and `geekbar.xyz`; the mobile identity control is disabled elsewhere.
+Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.11 allows the client on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
 
 | Setting | Behavior |
 | --- | --- |
 | Mobile identity (rejoin) | Reports a mobile client on the next match join to test server handling of the client-provided mobile flag. |
 | Culling sweep | Alternates portrait input to test the server's portrait/landscape object-culling boundary. |
 | Input diagnostics | Displays target state, eligible-target count, movement/fire flags, aim direction/range, and Trust Lab claims. |
+| Selected probe | Chooses one read-only or destructive probe. Destructive probe names begin with `!`. |
+| Arm destructive probes | Temporarily permits destructive probes. It automatically turns off after a destructive run. |
+| Run selected probe | Runs the selected probe and appends its structured result to the report. |
+| Run safe audit suite | Runs every read-only audit without mutating the connection or server state. |
+| Run destructive suite | Runs every destructive probe after all authorization checks and confirmation. The local match may disconnect or restart. |
+| Clear probe report | Clears the in-memory Trust Lab report and its diagnostics overlay. |
+
+#### Read-only probes
+
+| Probe | What it tests | Expected healthy result |
+| --- | --- | --- |
+| Client claims | Captures mobile identity, portrait, movement, and firing claims currently controlled by the client. | Claims are recorded without changing them. |
+| Protocol round-trip | Serializes and deserializes a boundary-valued `InputMsg` entirely in the browser. | Message type, sequence, flags, and actions round-trip consistently. |
+| Inventory integrity | Checks weapon definitions, ammunition, and inventory counts for unknown, negative, or non-finite values. | Every equipped item resolves and every count is finite and non-negative. |
+| Action-state audit | Detects contradictory movement and firing during another active action. | No contradictory client state is active. |
+| Culling exposure | Counts active players and obstacles sent to the client, including cross-layer objects and portrait state. | The report provides evidence for comparison with the server's intended visibility policy. |
+| Network baseline | Records socket URL/state, average ping, update interval, and received-update count. | The game is connected and receiving updates normally. |
+| Resource limits | Counts players, obstacles, loot, projectiles, bullets, and Pixi stage children. | Counts remain below the documented client audit thresholds. |
+| Renderer resilience | Inspects Pixi's texture cache without mutating it. | All cached textures are valid. |
+| Lifecycle consistency | Compares initialized/playing/connecting/connected flags with WebSocket state. | Game and socket lifecycle flags agree. |
+
+#### Destructive localhost probes
+
+These probes send bounded test traffic to the active game socket. They run only when the page hostname is in `TRUSTED_URLS`, the active WebSocket hostname is independently in `TRUSTED_URLS`, destructive probes are armed, and the confirmation dialog is accepted. A localhost page pointed at a remote WebSocket is rejected. Each sent probe receives a delayed connection-health observation, but local server logs remain authoritative when distinguishing deliberate rejection, connection termination, and match-process failure.
+
+| Probe | Traffic sent | Expected secure behavior |
+| --- | --- | --- |
+| Duplicate input replay | Sends the same sequenced input twice. | Duplicate or stale state is ignored without corrupting player state. |
+| Conflicting actions | Sends one input containing reload, use, interact, weapon switch, and held fire together. | The server applies a valid transition or rejects incompatible actions safely. |
+| Invalid input enum | Sends one out-of-range input action value. | The value is rejected without an uncaught exception or match-wide failure. |
+| Truncated input packet | Sends a one-byte Input message with no body. | The connection is rejected safely and the match process remains contained. |
+| Jitter/reorder burst | Schedules eight duplicate inputs in a bounded non-monotonic delay pattern. | Sequence handling remains deterministic and responsive. |
+| Bounded input-rate burst | Sends 32 duplicate inputs in one bounded burst. | Rate controls absorb or reject the burst without resource growth or process failure. |
+
+Probe results are stored in `window.__SURVEV_RESEARCH__.status.trustReport`, printed as `[SurvevGPT Trust Lab]` console records, capped at 100 entries, and summarized in the on-screen diagnostics overlay. Outcomes are `pass`, `warning`, `sent`, `blocked`, or `error` and include timestamps and structured details for GitHub issue reports.
 
 ### Deliberately unsupported
 
@@ -117,7 +152,7 @@ X-ray/ceiling removal and atlas recoloring fail closed. Earlier approaches mutat
 
 GeekMenu settings are persisted through Tampermonkey storage and mirrored to page storage as a fallback. This keeps the selected aimbot profile and other controls stable across reloads and across the allowlisted project domains.
 
-On `localhost` and `geekbar.xyz`, GeekMenu exposes a Trust Lab section. Its mobile-identity probe applies on the next match join and tests the server's client-reported mobile pickup behavior. Movement accuracy exercises the one-tick movement-spread boundary, while Culling sweep tests portrait-controlled visibility. Diagnostics show the active claims; destructive crash and denial-of-service probes are intentionally excluded.
+On trusted localhost pages, GeekMenu exposes Trust Lab claims, read-only audits, and explicitly armed bounded destructive probes. Movement accuracy also exercises the one-tick movement-spread boundary outside the probe runner. Public allowlisted deployments continue to receive ordinary GeekMenu features but cannot run Trust Lab probes unless their hostname is deliberately added to `TRUSTED_URLS` in a rebuilt userscript.
 
 ## Diagnostics
 
@@ -127,4 +162,4 @@ The client defaults API, assets, matchmaking, and ping/WebSocket discovery to th
 
 ## Source revision and rollback
 
-The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `2d2ff838`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
+The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `809b2c75`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.

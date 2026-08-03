@@ -1,13 +1,15 @@
 // This file is serialized into the generated userscript by build-native-userscript.mjs.
 // Keep all dependencies passed as arguments so it remains independently testable.
-export function nativeLoaderRuntime(pageWindow, payload, buildInfo, storage) {
+export function nativeLoaderRuntime(pageWindow, payload, buildInfo, storage, urlPolicy) {
     'use strict';
 
     const STATUS_KEY = '__SURVEVGPT_NATIVE_STATUS__';
     const SETTINGS_KEY = 'survevgpt.research.settings.v1';
-    const allowedHosts = Object.freeze(['localhost', 'survev.io', 'geekbar.xyz']);
+    const allowedHosts = Object.freeze([...urlPolicy.allowedUrls]);
+    const trustedHosts = Object.freeze([...urlPolicy.trustedUrls]);
     const hostname = pageWindow.location.hostname.toLowerCase().replace(/\.$/, '');
     const allowed = allowedHosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+    const trusted = trustedHosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
     const status = pageWindow[STATUS_KEY] = {
         version: buildInfo.version,
         revision: buildInfo.revision,
@@ -45,7 +47,19 @@ export function nativeLoaderRuntime(pageWindow, payload, buildInfo, storage) {
         enumerable: false,
         writable: false,
     });
-    report('authorized', { hostname, revision: buildInfo.revision });
+    Object.defineProperty(pageWindow, '__SURVEVGPT_AUTHORIZATION__', {
+        value: Object.freeze({
+            hostname,
+            allowed,
+            trusted,
+            allowedUrls: allowedHosts,
+            trustedUrls: trustedHosts,
+        }),
+        configurable: false,
+        enumerable: false,
+        writable: false,
+    });
+    report('authorized', { hostname, revision: buildInfo.revision, trusted });
 
     try {
         const savedSettings = storage?.get(SETTINGS_KEY);

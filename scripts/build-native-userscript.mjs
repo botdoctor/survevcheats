@@ -3,6 +3,7 @@ import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderNativeMetadata } from '../native-loader/metadata.js';
 import { nativeLoaderRuntime } from '../native-loader/runtime.js';
+import { ALLOWED_URLS, TRUSTED_URLS } from '../src/urlPolicy.js';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(await readFile(resolve(projectRoot, 'package.json'), 'utf8'));
@@ -32,12 +33,15 @@ const output = `${renderNativeMetadata(packageJson.version)}
 (() => {
     const payload = ${JSON.stringify(payload)};
     const buildInfo = ${JSON.stringify(buildInfo)};
+    const allowedUrls = ${JSON.stringify(ALLOWED_URLS)};
+    const trustedUrls = ${JSON.stringify(TRUSTED_URLS)};
+    const urlPolicy = Object.freeze({ allowedUrls, trustedUrls });
     const storage = {
         get: (key) => GM_getValue(key),
         set: (key, value) => GM_setValue(key, value),
         remove: (key) => GM_deleteValue(key),
     };
-    (${nativeLoaderRuntime.toString()})(unsafeWindow, payload, buildInfo, storage);
+    (${nativeLoaderRuntime.toString()})(unsafeWindow, payload, buildInfo, storage, urlPolicy);
 })();
 `;
 

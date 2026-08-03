@@ -1,4 +1,5 @@
 export const ALLOWED_URLS = Object.freeze(['localhost', 'survev.io', 'geekbar.xyz']);
+export const TRUSTED_URLS = Object.freeze(['localhost']);
 
 export function isAllowedHostname(hostname) {
     const normalized = hostname.toLowerCase().replace(/\.$/, '');
@@ -7,11 +8,23 @@ export function isAllowedHostname(hostname) {
     );
 }
 
+export function isTrustedHostname(hostname) {
+    const normalized = hostname.toLowerCase().replace(/\.$/, '');
+    return TRUSTED_URLS.some((trusted) =>
+        normalized === trusted || normalized.endsWith(`.${trusted}`)
+    );
+}
+
 export function assertAllowedPage(location = window.location) {
     if (!isAllowedHostname(location.hostname)) {
         throw new Error(`[SurvevGPT] Refusing to load on non-allowlisted host: ${location.hostname}`);
     }
-    return Object.freeze({ hostname: location.hostname, allowedUrls: ALLOWED_URLS });
+    return Object.freeze({
+        hostname: location.hostname,
+        allowedUrls: ALLOWED_URLS,
+        trustedUrls: TRUSTED_URLS,
+        trusted: isTrustedHostname(location.hostname),
+    });
 }
 
 export function isAllowedUrl(value, base = window.location.href) {
