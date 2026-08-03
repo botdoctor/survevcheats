@@ -7,7 +7,12 @@ import { nativeLoaderRuntime } from '../native-loader/runtime.js';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageJson = JSON.parse(await readFile(resolve(projectRoot, 'package.json'), 'utf8'));
 const payloadPath = resolve(projectRoot, process.env.SURVEVGPT_NATIVE_PAYLOAD ?? 'native-dist/survev-native-client.js');
-const outputPath = resolve(projectRoot, process.env.SURVEVGPT_NATIVE_OUTPUT ?? 'dist/survevgpt-native.user.js');
+const outputPaths = process.env.SURVEVGPT_NATIVE_OUTPUT
+    ? [resolve(projectRoot, process.env.SURVEVGPT_NATIVE_OUTPUT)]
+    : [
+        resolve(projectRoot, 'dist/survevgpt-local.user.js'),
+        resolve(projectRoot, 'dist/survevgpt-native.user.js'),
+    ];
 const revision = process.env.SURVEVGPT_NATIVE_REVISION ?? 'development';
 
 let payload;
@@ -31,6 +36,8 @@ const output = `${renderNativeMetadata(packageJson.version)}
 })();
 `;
 
-await mkdir(dirname(outputPath), { recursive: true });
-await writeFile(outputPath, output);
-console.log(`Built ${basename(outputPath)} with ${payload.length} bytes of native client code.`);
+for (const outputPath of outputPaths) {
+    await mkdir(dirname(outputPath), { recursive: true });
+    await writeFile(outputPath, output);
+    console.log(`Built ${basename(outputPath)} with ${payload.length} bytes of native client code.`);
+}

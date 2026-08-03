@@ -30,4 +30,7 @@ const buildScript = await readFile(new URL('./build-native-userscript.mjs', impo
 if (!buildScript.includes('native-dist/survev-native-client.js')) {
     throw new Error('Native payload artifact contract changed unexpectedly.');
 }
+if (!buildScript.includes('dist/survevgpt-local.user.js')) {
+    throw new Error('Established Tampermonkey install entry point must receive the native build.');
+}
 console.log('Native Tampermonkey loader verification passed.');

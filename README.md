@@ -14,9 +14,9 @@ npm test
 npm run build:native
 ```
 
-The final artifact is `dist/survevgpt-native.user.js`. It is intentionally large (approximately 19 MB) because it contains the complete source-built client and its generated atlases.
+The established install artifact is `dist/survevgpt-local.user.js`; `dist/survevgpt-native.user.js` is an identical alias. It is intentionally large (approximately 19 MB) because it contains the complete source-built client and its generated atlases.
 
-Install that file in Tampermonkey and open an allowlisted host. The legacy `dist/survevgpt-local.user.js` is retained only for rollback and comparison.
+Install `dist/survevgpt-local.user.js` in Tampermonkey and open an allowlisted host. Existing installation links now receive the source-native client directly.
 
 ## Controls
 

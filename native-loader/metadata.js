@@ -1,6 +1,6 @@
 import { ALLOWED_URLS } from '../src/urlPolicy.js';
 
-export const NATIVE_USER_SCRIPT_NAME = 'SurvevGPT Source-Native Research Client';
+export const NATIVE_USER_SCRIPT_NAME = 'SurvevGPT Allowlisted Research Harness';
 
 function resourceRules() {
     return ALLOWED_URLS.flatMap((hostname) => {
