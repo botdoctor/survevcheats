@@ -1,4 +1,4 @@
-export const ALLOWED_URLS = Object.freeze(['localhost']);
+export const ALLOWED_URLS = Object.freeze(['survev.io']);
 
 export function isAllowedUrl(value, base = window.location.href) {
     try {
