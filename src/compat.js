@@ -71,6 +71,28 @@ function adaptPlayer(player) {
     exposeMPrefix(player?.m_localData);
 }
 
+function adaptLocalization(localization) {
+    if (!localization || localization.__survevGptTranslateGuard) return;
+
+    const translate = localization.translate;
+    if (typeof translate !== 'function') return;
+
+    localization.translate = function(key, ...args) {
+        if (key == null) return '';
+        try {
+            const translated = Reflect.apply(translate, this, [key, ...args]);
+            return translated ?? String(key);
+        } catch (error) {
+            if (!(error instanceof TypeError) || !String(error.message).includes("reading 'replace'")) throw error;
+            return String(key);
+        }
+    };
+    Object.defineProperty(localization, '__survevGptTranslateGuard', {
+        configurable: true,
+        value: true,
+    });
+}
+
 export function adaptGameRuntime(game) {
     aliasMap(game, {
         pixi: 'nHb',
@@ -111,6 +133,7 @@ export function adaptGameRuntime(game) {
         activeId: 'ClgHB',
     });
     exposeMPrefix(game);
+    adaptLocalization(game.localization);
     [
         game.m_camera,
         game.m_input,

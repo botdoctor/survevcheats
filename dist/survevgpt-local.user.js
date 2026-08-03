@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.9
+// @version      0.1.10
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
@@ -124,7 +124,7 @@
 
   (() => {
       const authorization = assertAllowedPage(unsafeWindow.location);
-      console.info('[SurvevGPT 0.1.9] Authorized page', authorization);
+      console.info('[SurvevGPT 0.1.10] Authorized page', authorization);
 
       installScriptIsolation();
 
@@ -561,6 +561,28 @@
       exposeMPrefix(player?.m_localData);
   }
 
+  function adaptLocalization(localization) {
+      if (!localization || localization.__survevGptTranslateGuard) return;
+
+      const translate = localization.translate;
+      if (typeof translate !== 'function') return;
+
+      localization.translate = function(key, ...args) {
+          if (key == null) return '';
+          try {
+              const translated = Reflect.apply(translate, this, [key, ...args]);
+              return translated ?? String(key);
+          } catch (error) {
+              if (!(error instanceof TypeError) || !String(error.message).includes("reading 'replace'")) throw error;
+              return String(key);
+          }
+      };
+      Object.defineProperty(localization, '__survevGptTranslateGuard', {
+          configurable: true,
+          value: true,
+      });
+  }
+
   function adaptGameRuntime(game) {
       aliasMap(game, {
           pixi: 'nHb',
@@ -601,6 +623,7 @@
           activeId: 'ClgHB',
       });
       exposeMPrefix(game);
+      adaptLocalization(game.localization);
       [
           game.m_camera,
           game.m_input,
