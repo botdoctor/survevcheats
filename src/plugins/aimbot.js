@@ -6,21 +6,27 @@ import { findBullet, findWeap } from '../utils.js';
 
 export function aimBot() {
 
-    if (!state.isAimBotEnabled) return;
+    if (!state.isAimBotEnabled) {
+        unsafeWindow.__SURVEVGPT_AIMBOT_STATUS__ = { stage: 'disabled' };
+        return;
+    }
 
     try {
         const game = unsafeWindow.game;
         const players = game?.playerBarn?.playerPool?.pool;
         const me = game?.activePlayer;
 
-        if (!Array.isArray(players) || !me?.netData || !me?.pos || !game?.camera?.pointToScreen || !game?.input?.mousePos) return;
+        if (!Array.isArray(players) || !me?.pos || typeof game?.camera?.pointToScreen !== 'function' || !game?.input?.mousePos) {
+            unsafeWindow.__SURVEVGPT_AIMBOT_STATUS__ = { stage: 'waiting-for-runtime' };
+            return;
+        }
 
         const meTeam = getTeam(me);
 
         let enemy = null;
         let minDistanceToEnemyFromMouse = Infinity;
         
-        if (state.focusedEnemy?.active && state.focusedEnemy.netData && !state.focusedEnemy.netData.dead) {
+        if (state.focusedEnemy?.active !== false && state.focusedEnemy?.netData && !state.focusedEnemy.netData.dead) {
             enemy = state.focusedEnemy;
         }else{
             if (state.focusedEnemy){
@@ -28,11 +34,20 @@ export function aimBot() {
                 updateOverlay();
             }
 
+            let eligiblePlayers = 0;
             players.forEach((player) => {
                 // We miss inactive or dead players
-                if (!player?.active || !player.netData || player.netData.dead || !player.pos || (!state.isAimAtKnockedOutEnabled && player.downed) || me.__id === player.__id || me.layer !== player.layer || getTeam(player) == meTeam || state.friends.includes(player.nameText?._text)) return;
+                const playerTeam = getTeam(player);
+                const sameTeam = meTeam !== undefined && playerTeam !== undefined && playerTeam === meTeam;
+                if (!player || player.active === false || !player.netData || player.netData.dead || !player.pos || (!state.isAimAtKnockedOutEnabled && player.downed) || me.__id === player.__id || me.layer !== player.layer || sameTeam || state.friends.includes(player.nameText?._text)) return;
+
+                eligiblePlayers += 1;
     
-                const screenPlayerPos = game.camera.pointToScreen({x: player.pos._x, y: player.pos._y});
+                const playerX = coordinate(player.pos, 'x');
+                const playerY = coordinate(player.pos, 'y');
+                if (!Number.isFinite(playerX) || !Number.isFinite(playerY)) return;
+                const screenPlayerPos = game.camera.pointToScreen({x: playerX, y: playerY});
+                if (!Number.isFinite(screenPlayerPos?.x) || !Number.isFinite(screenPlayerPos?.y)) return;
                 const mousePos = game.input?.mousePos;
                 const mouseX = mousePos?.__survevGptRawX ?? mousePos?.x;
                 const mouseY = mousePos?.__survevGptRawY ?? mousePos?.y;
@@ -45,13 +60,18 @@ export function aimBot() {
                     enemy = player;
                 }
             });
+            unsafeWindow.__SURVEVGPT_AIMBOT_STATUS__ = {
+                stage: enemy ? 'target-acquired' : 'no-target',
+                players: players.length,
+                eligiblePlayers,
+            };
         }
 
         if (enemy) {
-            const meX = me.pos._x;
-            const meY = me.pos._y;
-            const enemyX = enemy.pos._x;
-            const enemyY = enemy.pos._y;
+            const meX = coordinate(me.pos, 'x');
+            const meY = coordinate(me.pos, 'y');
+            const enemyX = coordinate(enemy.pos, 'x');
+            const enemyY = coordinate(enemy.pos, 'y');
 
             const distanceToEnemy = Math.hypot(meX - enemyX, meY - enemyY);
             // const distanceToEnemy = (meX - enemyX) ** 2 + (meY - enemyY) ** 2;
@@ -134,7 +154,7 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
 
     if (state.lastFrames[enemy.__id].length < 30) {
         console.log("Insufficient data for prediction, using current position");
-        return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+        return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
     }
 
     if (state.lastFrames[enemy.__id].length > 30){
@@ -143,12 +163,12 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
 
     const deltaTime = (dateNow - state.lastFrames[enemy.__id][0][0]) / 1000; // Time since last frame in seconds
     if (!Number.isFinite(deltaTime) || deltaTime <= 0) {
-        return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+        return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
     }
 
     const enemyVelocity = {
-        x: (enemyPos._x - state.lastFrames[enemy.__id][0][1]._x) / deltaTime,
-        y: (enemyPos._y - state.lastFrames[enemy.__id][0][1]._y) / deltaTime,
+        x: (coordinate(enemyPos, 'x') - coordinate(state.lastFrames[enemy.__id][0][1], 'x')) / deltaTime,
+        y: (coordinate(enemyPos, 'y') - coordinate(state.lastFrames[enemy.__id][0][1], 'y')) / deltaTime,
     };
 
     const weapon = findWeap(curPlayer);
@@ -165,8 +185,8 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
     // Quadratic equation for time prediction
     const vex = enemyVelocity.x;
     const vey = enemyVelocity.y;
-    const dx = enemyPos._x - curPlayerPos._x;
-    const dy = enemyPos._y - curPlayerPos._y;
+    const dx = coordinate(enemyPos, 'x') - coordinate(curPlayerPos, 'x');
+    const dy = coordinate(enemyPos, 'y') - coordinate(curPlayerPos, 'y');
     const vb = bulletSpeed;
 
     const a = vb ** 2 - vex ** 2 - vey ** 2;
@@ -178,7 +198,7 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
     if (Math.abs(a) < 1e-6) {
         console.log('Linear solution bullet speed is much greater than velocity')
         if (Math.abs(b) < 1e-6) {
-            return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+            return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
         }
         t = -c / b;
     } else {
@@ -186,7 +206,7 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
 
         if (discriminant < 0) {
             console.log("No solution, shooting at current position");
-            return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+            return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
         }
 
         const sqrtD = Math.sqrt(discriminant);
@@ -199,22 +219,26 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
 
     if (!Number.isFinite(t) || t < 0) {
         console.log("Negative time, shooting at current position");
-        return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+        return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
     }
 
     // console.log(`A bullet with the enemy will collide through ${t}`)
 
     const predictedPos = {
-        x: enemyPos._x + vex * t,
-        y: enemyPos._y + vey * t,
+        x: coordinate(enemyPos, 'x') + vex * t,
+        y: coordinate(enemyPos, 'y') + vey * t,
     };
 
     return unsafeWindow.game.camera.pointToScreen(predictedPos);
 }
 
 function calcAngle(playerPos, mePos){
-    const dx = mePos._x - playerPos._x;
-    const dy = mePos._y - playerPos._y;
+    const dx = coordinate(mePos, 'x') - coordinate(playerPos, 'x');
+    const dy = coordinate(mePos, 'y') - coordinate(playerPos, 'y');
 
     return Math.atan2(dy, dx);
+}
+
+function coordinate(vector, axis) {
+    return Number(vector?.[`_${axis}`] ?? vector?.[axis]);
 }

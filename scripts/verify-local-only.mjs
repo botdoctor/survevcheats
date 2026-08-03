@@ -58,7 +58,9 @@ const webRequestRules = [...renderedMetadata.matchAll(/^\/\/ @webRequest\s+(.+)$
     .flatMap((match) => JSON.parse(match[1]));
 const expectedSelectors = new Set(ALLOWED_URLS.flatMap((hostname) =>
     (hostname === 'localhost' ? [hostname] : [hostname, `*.${hostname}`]).flatMap((host) =>
-        ['http', 'https'].map((protocol) => `${protocol}://${host}/js/*.js`)
+        ['http', 'https'].flatMap((protocol) =>
+            ['/*.js', '/js/*.js'].map((path) => `${protocol}://${host}${path}`)
+        )
     )
 ));
 if (
@@ -69,6 +71,9 @@ if (
 const removeCeilings = await readFile(new URL('../src/plugins/removeCeilings.js', import.meta.url), 'utf8');
 if (/Object\.defineProperty\(\s*Object\.prototype/.test(removeCeilings)) {
     throw new Error('Rendering hooks must not modify Object.prototype.');
+}
+if (/Texture(?:\.prototype)?|\.valid\b|textureCacheIds/.test(removeCeilings.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))) {
+    throw new Error('Ceiling hooks must not mutate Pixi texture internals.');
 }
 
 const bootstrap = await readFile(new URL('../src/bootstrap.js', import.meta.url), 'utf8');

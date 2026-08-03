@@ -3,17 +3,19 @@ import { ALLOWED_URLS } from './urlPolicy.js';
 const resourceRule = () => JSON.stringify(
     ALLOWED_URLS.flatMap((hostname) => {
         const hosts = hostname === 'localhost' ? [hostname] : [hostname, `*.${hostname}`];
-        return hosts.flatMap((host) => ['http', 'https'].map((protocol) => ({
-            selector: `${protocol}://${host}/js/*.js`,
-            action: 'cancel',
-        })));
+        return hosts.flatMap((host) => ['http', 'https'].flatMap((protocol) =>
+            ['/*.js', '/js/*.js'].map((path) => ({
+                selector: `${protocol}://${host}${path}`,
+                action: 'cancel',
+            }))
+        ));
     }),
 );
 
 export const metadata = `// ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.7
+// @version      0.1.9
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3

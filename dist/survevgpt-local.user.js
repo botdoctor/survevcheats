@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.7
+// @version      0.1.9
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
@@ -9,7 +9,7 @@
 // @match        *://geekbar.xyz/*
 // @match        *://*.geekbar.xyz/*
 // @run-at       document-start
-// @webRequest   [{"selector":"http://localhost/js/*.js","action":"cancel"},{"selector":"https://localhost/js/*.js","action":"cancel"},{"selector":"http://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/js/*.js","action":"cancel"}]
+// @webRequest   [{"selector":"http://localhost/*.js","action":"cancel"},{"selector":"http://localhost/js/*.js","action":"cancel"},{"selector":"https://localhost/*.js","action":"cancel"},{"selector":"https://localhost/js/*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*.js","action":"cancel"},{"selector":"http://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*.js","action":"cancel"},{"selector":"https://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/js/*.js","action":"cancel"}]
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addElement
 // @grant        unsafeWindow
@@ -124,7 +124,7 @@
 
   (() => {
       const authorization = assertAllowedPage(unsafeWindow.location);
-      console.info('[SurvevGPT 0.1.7] Authorized page', authorization);
+      console.info('[SurvevGPT 0.1.9] Authorized page', authorization);
 
       installScriptIsolation();
 
@@ -1583,21 +1583,27 @@
 
   function aimBot() {
 
-      if (!state.isAimBotEnabled) return;
+      if (!state.isAimBotEnabled) {
+          unsafeWindow.__SURVEVGPT_AIMBOT_STATUS__ = { stage: 'disabled' };
+          return;
+      }
 
       try {
           const game = unsafeWindow.game;
           const players = game?.playerBarn?.playerPool?.pool;
           const me = game?.activePlayer;
 
-          if (!Array.isArray(players) || !me?.netData || !me?.pos || !game?.camera?.pointToScreen || !game?.input?.mousePos) return;
+          if (!Array.isArray(players) || !me?.pos || typeof game?.camera?.pointToScreen !== 'function' || !game?.input?.mousePos) {
+              unsafeWindow.__SURVEVGPT_AIMBOT_STATUS__ = { stage: 'waiting-for-runtime' };
+              return;
+          }
 
           const meTeam = getTeam(me);
 
           let enemy = null;
           let minDistanceToEnemyFromMouse = Infinity;
           
-          if (state.focusedEnemy?.active && state.focusedEnemy.netData && !state.focusedEnemy.netData.dead) {
+          if (state.focusedEnemy?.active !== false && state.focusedEnemy?.netData && !state.focusedEnemy.netData.dead) {
               enemy = state.focusedEnemy;
           }else {
               if (state.focusedEnemy){
@@ -1605,11 +1611,20 @@
                   updateOverlay();
               }
 
+              let eligiblePlayers = 0;
               players.forEach((player) => {
                   // We miss inactive or dead players
-                  if (!player?.active || !player.netData || player.netData.dead || !player.pos || (!state.isAimAtKnockedOutEnabled && player.downed) || me.__id === player.__id || me.layer !== player.layer || getTeam(player) == meTeam || state.friends.includes(player.nameText?._text)) return;
+                  const playerTeam = getTeam(player);
+                  const sameTeam = meTeam !== undefined && playerTeam !== undefined && playerTeam === meTeam;
+                  if (!player || player.active === false || !player.netData || player.netData.dead || !player.pos || (!state.isAimAtKnockedOutEnabled && player.downed) || me.__id === player.__id || me.layer !== player.layer || sameTeam || state.friends.includes(player.nameText?._text)) return;
+
+                  eligiblePlayers += 1;
       
-                  const screenPlayerPos = game.camera.pointToScreen({x: player.pos._x, y: player.pos._y});
+                  const playerX = coordinate(player.pos, 'x');
+                  const playerY = coordinate(player.pos, 'y');
+                  if (!Number.isFinite(playerX) || !Number.isFinite(playerY)) return;
+                  const screenPlayerPos = game.camera.pointToScreen({x: playerX, y: playerY});
+                  if (!Number.isFinite(screenPlayerPos?.x) || !Number.isFinite(screenPlayerPos?.y)) return;
                   const mousePos = game.input?.mousePos;
                   const mouseX = mousePos?.__survevGptRawX ?? mousePos?.x;
                   const mouseY = mousePos?.__survevGptRawY ?? mousePos?.y;
@@ -1622,13 +1637,18 @@
                       enemy = player;
                   }
               });
+              unsafeWindow.__SURVEVGPT_AIMBOT_STATUS__ = {
+                  stage: enemy ? 'target-acquired' : 'no-target',
+                  players: players.length,
+                  eligiblePlayers,
+              };
           }
 
           if (enemy) {
-              const meX = me.pos._x;
-              const meY = me.pos._y;
-              const enemyX = enemy.pos._x;
-              const enemyY = enemy.pos._y;
+              const meX = coordinate(me.pos, 'x');
+              const meY = coordinate(me.pos, 'y');
+              const enemyX = coordinate(enemy.pos, 'x');
+              const enemyY = coordinate(enemy.pos, 'y');
 
               const distanceToEnemy = Math.hypot(meX - enemyX, meY - enemyY);
               // const distanceToEnemy = (meX - enemyX) ** 2 + (meY - enemyY) ** 2;
@@ -1711,7 +1731,7 @@
 
       if (state.lastFrames[enemy.__id].length < 30) {
           console.log("Insufficient data for prediction, using current position");
-          return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+          return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
       }
 
       if (state.lastFrames[enemy.__id].length > 30){
@@ -1720,12 +1740,12 @@
 
       const deltaTime = (dateNow - state.lastFrames[enemy.__id][0][0]) / 1000; // Time since last frame in seconds
       if (!Number.isFinite(deltaTime) || deltaTime <= 0) {
-          return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+          return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
       }
 
       const enemyVelocity = {
-          x: (enemyPos._x - state.lastFrames[enemy.__id][0][1]._x) / deltaTime,
-          y: (enemyPos._y - state.lastFrames[enemy.__id][0][1]._y) / deltaTime,
+          x: (coordinate(enemyPos, 'x') - coordinate(state.lastFrames[enemy.__id][0][1], 'x')) / deltaTime,
+          y: (coordinate(enemyPos, 'y') - coordinate(state.lastFrames[enemy.__id][0][1], 'y')) / deltaTime,
       };
 
       const weapon = findWeap(curPlayer);
@@ -1742,8 +1762,8 @@
       // Quadratic equation for time prediction
       const vex = enemyVelocity.x;
       const vey = enemyVelocity.y;
-      const dx = enemyPos._x - curPlayerPos._x;
-      const dy = enemyPos._y - curPlayerPos._y;
+      const dx = coordinate(enemyPos, 'x') - coordinate(curPlayerPos, 'x');
+      const dy = coordinate(enemyPos, 'y') - coordinate(curPlayerPos, 'y');
       const vb = bulletSpeed;
 
       const a = vb ** 2 - vex ** 2 - vey ** 2;
@@ -1755,7 +1775,7 @@
       if (Math.abs(a) < 1e-6) {
           console.log('Linear solution bullet speed is much greater than velocity');
           if (Math.abs(b) < 1e-6) {
-              return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+              return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
           }
           t = -c / b;
       } else {
@@ -1763,7 +1783,7 @@
 
           if (discriminant < 0) {
               console.log("No solution, shooting at current position");
-              return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+              return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
           }
 
           const sqrtD = Math.sqrt(discriminant);
@@ -1776,24 +1796,28 @@
 
       if (!Number.isFinite(t) || t < 0) {
           console.log("Negative time, shooting at current position");
-          return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+          return unsafeWindow.game.camera.pointToScreen({x: coordinate(enemyPos, 'x'), y: coordinate(enemyPos, 'y')});
       }
 
       // console.log(`A bullet with the enemy will collide through ${t}`)
 
       const predictedPos = {
-          x: enemyPos._x + vex * t,
-          y: enemyPos._y + vey * t,
+          x: coordinate(enemyPos, 'x') + vex * t,
+          y: coordinate(enemyPos, 'y') + vey * t,
       };
 
       return unsafeWindow.game.camera.pointToScreen(predictedPos);
   }
 
   function calcAngle(playerPos, mePos){
-      const dx = mePos._x - playerPos._x;
-      const dy = mePos._y - playerPos._y;
+      const dx = coordinate(mePos, 'x') - coordinate(playerPos, 'x');
+      const dy = coordinate(mePos, 'y') - coordinate(playerPos, 'y');
 
       return Math.atan2(dy, dx);
+  }
+
+  function coordinate(vector, axis) {
+      return Number(vector?.[`_${axis}`] ?? vector?.[axis]);
   }
 
   function keybinds(){
@@ -2216,59 +2240,9 @@
   }
 
   function removeCeilings() {
-      const texturePrototype = unsafeWindow.PIXI?.Texture?.prototype;
-      if (!texturePrototype || texturePrototype.__survevGptCeilingFilter) return;
-
-      Object.defineProperty(texturePrototype, '__survevGptCeilingFilter', {
-          configurable: true,
-          value: true,
-      });
-
-      Object.defineProperty(texturePrototype, 'textureCacheIds', {
-          configurable: true,
-          get() {
-              return this.__survevGptTextureCacheIds;
-          },
-          set(value) {
-              this.__survevGptTextureCacheIds = value;
-              if (!Array.isArray(value) || value.__survevGptCeilingFilter) return;
-
-              const texture = this;
-              const wrappedPush = new Proxy(value.push, {
-                  apply(target, thisArgs, args) {
-                      for (const cacheId of args) {
-                          if (typeof cacheId !== 'string') continue;
-                          const isCeiling = cacheId.includes('ceiling')
-                              && !cacheId.includes('map-building-container-ceiling-05');
-                          if (!isCeiling && !cacheId.includes('map-snow-')) continue;
-                          installVisibilityOverride(texture);
-                      }
-                      return Reflect.apply(target, thisArgs, args);
-                  },
-              });
-              Object.defineProperty(value, '__survevGptCeilingFilter', { value: true });
-              value.push = wrappedPush;
-          },
-      });
-  }
-
-  function installVisibilityOverride(texture) {
-      if (texture.__survevGptVisibilityOverride) return;
-
-      let nativeValid = texture.valid;
-      Object.defineProperty(texture, '__survevGptVisibilityOverride', {
-          configurable: true,
-          value: true,
-      });
-      Object.defineProperty(texture, 'valid', {
-          configurable: true,
-          get() {
-              return state.isXrayEnabled ? false : nativeValid;
-          },
-          set(value) {
-              nativeValid = value;
-          },
-      });
+      // Pixi texture validity is renderer-owned state. Overriding Texture.valid or
+      // Texture.prototype.textureCacheIds corrupts atlas and shader caches, so x-ray
+      // deliberately fails closed until ceilings can be identified as display objects.
   }
 
   let lastEspError = '';

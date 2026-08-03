@@ -2,7 +2,7 @@ import { assertAllowedPage } from './urlPolicy.js';
 
 (() => {
     const authorization = assertAllowedPage(unsafeWindow.location);
-    console.info('[SurvevGPT 0.1.7] Authorized page', authorization);
+    console.info('[SurvevGPT 0.1.9] Authorized page', authorization);
 
     installScriptIsolation();
 
