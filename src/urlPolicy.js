@@ -1,4 +1,4 @@
-export const ALLOWED_URLS = Object.freeze(['localhost', 'geekbar.xyz']);
+export const ALLOWED_URLS = Object.freeze(['localhost', 'survev.io']);
 
 export function isAllowedHostname(hostname) {
     const normalized = hostname.toLowerCase().replace(/\.$/, '');
