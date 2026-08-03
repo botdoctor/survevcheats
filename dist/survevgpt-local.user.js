@@ -1275,8 +1275,8 @@
               },
               {
                   name: 'objects',
-                  from: /(\w+)=new (\w+)\([`'"]Game[`'"],(\w+),10\),(\w+)=new \2\([`'"]Map[`'"],(\w+),12\)/,
-                  to: '$1=(window.gameObjectDefs=(window.gameObjectDefsRegister=new $2(`Game`,$3,10))._defs,window.gameObjectDefsRegister),$4=(window.objects=(window.mapObjectDefsRegister=new $2(`Map`,$5,12))._defs,window.mapObjectDefsRegister)'
+                  from: /(\w+)=new (\w+)\([`'"]Game[`'"],(\w+),10\),(\w+)=new \2\([`'"]Map[`'"],(\w+),12\);function (\w+)\(/,
+                  to: '$1=new $2(`Game`,$3,10),$4=new $2(`Map`,$5,12);window.gameObjectDefs=$1._defs;window.objects=$4._defs;function $6('
               }
           ];
 
