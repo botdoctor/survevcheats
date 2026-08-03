@@ -12,7 +12,7 @@ import { state } from './vars.js';
 let initGeneration = 0;
 export function initGame() {
     const generation = ++initGeneration;
-    console.log('init game...........');
+    console.log('[SurvevGPT] Initializing game hooks.');
 
     unsafeWindow.lastAimPos = null;
     unsafeWindow.aimTouchMoveDir = null;
@@ -30,6 +30,7 @@ export function initGame() {
         {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker, action: removeCeilings},
         {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker && unsafeWindow.game?.activePlayer?.container && unsafeWindow.game?.activePlayer?.pos, action: initTicker},
     ];
+    let lastAppliedCount = -1;
 
     (function checkLocalData(){
         if (generation !== initGeneration) return;
@@ -38,17 +39,6 @@ export function initGame() {
             return;
         }
 
-        console.log('Checking local data')
-
-        console.log(
-            unsafeWindow.game?.activePlayer?.localData, 
-            unsafeWindow.game?.map?.obstaclePool?.pool,
-            unsafeWindow.game?.smokeBarn?.particles,
-            unsafeWindow.game?.playerBarn?.playerPool?.pool
-        );
-
-        tasks.forEach(task => console.log(task.action, task.isApplied))
-        
         tasks.forEach(task => {
             if (task.isApplied) return;
             try {
@@ -59,9 +49,15 @@ export function initGame() {
                 console.warn('SurvevGPT task is not ready yet:', task.action.name || 'anonymous', error);
             }
         });
+
+        const appliedCount = tasks.filter(task => task.isApplied).length;
+        if (appliedCount !== lastAppliedCount) {
+            lastAppliedCount = appliedCount;
+            console.log(`[SurvevGPT] Game hooks ready: ${appliedCount}/${tasks.length}`);
+        }
         
         if (tasks.some(task => !task.isApplied)) setTimeout(checkLocalData, 50);
-        else console.log('All functions applied, stopping loop.');
+        else console.log('[SurvevGPT] All game hooks applied.');
     })();
 
     updateOverlay();

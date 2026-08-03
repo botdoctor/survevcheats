@@ -1,6 +1,6 @@
 {
   "name": "survevgpt-local-research-harness",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Localhost-only white-box gameplay security research harness.",
   "main": "init.js",
   "type": "module",

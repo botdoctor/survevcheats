@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.4
+// @version      0.1.5
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
@@ -122,7 +122,9 @@
 
   (() => {
       const authorization = assertAllowedPage();
-      console.info('[SurvevGPT 0.1.4] Authorized page', authorization);
+      console.info('[SurvevGPT 0.1.5] Authorized page', authorization);
+
+      installScriptIsolation();
 
       const initialize = () => {
           queueMicrotask(() => {
@@ -138,6 +140,21 @@
           initialize();
       }
   })();
+
+  function installScriptIsolation() {
+      if (document.querySelector('meta[data-survevgpt-script-isolation]')) return;
+
+      const policy = document.createElement('meta');
+      policy.httpEquiv = 'Content-Security-Policy';
+      policy.content = "script-src 'unsafe-inline' 'unsafe-eval' blob:; worker-src blob:";
+      policy.dataset.survevgptScriptIsolation = 'true';
+
+      const parent = document.head || document.documentElement;
+      if (!parent) {
+          throw new Error('[SurvevGPT] Document root was unavailable for script isolation.');
+      }
+      parent.prepend(policy);
+  }
 
   let state = {
       isAimBotEnabled: true,
@@ -2630,7 +2647,7 @@
   let initGeneration = 0;
   function initGame() {
       const generation = ++initGeneration;
-      console.log('init game...........');
+      console.log('[SurvevGPT] Initializing game hooks.');
 
       unsafeWindow.lastAimPos = null;
       unsafeWindow.aimTouchMoveDir = null;
@@ -2648,6 +2665,7 @@
           {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker, action: removeCeilings},
           {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker && unsafeWindow.game?.activePlayer?.container && unsafeWindow.game?.activePlayer?.pos, action: initTicker},
       ];
+      let lastAppliedCount = -1;
 
       (function checkLocalData(){
           if (generation !== initGeneration) return;
@@ -2656,17 +2674,6 @@
               return;
           }
 
-          console.log('Checking local data');
-
-          console.log(
-              unsafeWindow.game?.activePlayer?.localData, 
-              unsafeWindow.game?.map?.obstaclePool?.pool,
-              unsafeWindow.game?.smokeBarn?.particles,
-              unsafeWindow.game?.playerBarn?.playerPool?.pool
-          );
-
-          tasks.forEach(task => console.log(task.action, task.isApplied));
-          
           tasks.forEach(task => {
               if (task.isApplied) return;
               try {
@@ -2677,9 +2684,15 @@
                   console.warn('SurvevGPT task is not ready yet:', task.action.name || 'anonymous', error);
               }
           });
+
+          const appliedCount = tasks.filter(task => task.isApplied).length;
+          if (appliedCount !== lastAppliedCount) {
+              lastAppliedCount = appliedCount;
+              console.log(`[SurvevGPT] Game hooks ready: ${appliedCount}/${tasks.length}`);
+          }
           
           if (tasks.some(task => !task.isApplied)) setTimeout(checkLocalData, 50);
-          else console.log('All functions applied, stopping loop.');
+          else console.log('[SurvevGPT] All game hooks applied.');
       })();
 
       updateOverlay();

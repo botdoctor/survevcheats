@@ -66,4 +66,9 @@ if (/Object\.defineProperty\(\s*Object\.prototype/.test(removeCeilings)) {
     throw new Error('Rendering hooks must not modify Object.prototype.');
 }
 
+const bootstrap = await readFile(new URL('../src/bootstrap.js', import.meta.url), 'utf8');
+if (!/script-src[^;]*blob:/.test(bootstrap)) {
+    throw new Error('The bootstrap must isolate original scripts while allowing rewritten blob modules.');
+}
+
 console.log('Local-only verification passed.');
