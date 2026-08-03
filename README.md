@@ -28,7 +28,7 @@ Settings are disabled by default and persisted in `localStorage`. The native API
 
 Supported modules include predictive and priority-based aim, triggerbot, recoil-paced precision fire, movement-accuracy input, configurable smart loot and auto-heal, auto-door/reload/switch automation, zoom scaling, colored and range-limited ESP, off-screen indicators, enemy weapon/reload information, grenade trajectory/timer and danger zones, spectator and input diagnostics, culling sweep, smoke/obstacle opacity, visible names, weapon cone, bump fire, and spin aim. X-ray/ceiling removal and atlas recoloring deliberately fail closed because mutating Pixi texture validity caused the earlier renderer corruption.
 
-The aimbot profile selector provides Default, OP, and Custom behavior. OP enables full-range sticky acquisition and intercept prediction while firing; Custom uses the individual FOV, range, priority, prediction, and downed-target controls. Aim automation requires an equipped gun and remains inactive for fists, melee weapons, throwables, and consumables. Movement accuracy suppresses movement only when the equipped gun is due to fire and restores movement between shots.
+The aimbot profile selector provides Default, OP, and Custom behavior. OP enables full-range sticky acquisition and intercept prediction while firing; Custom uses the individual FOV, range, priority, prediction, and downed-target controls. Aim automation requires an equipped gun and remains inactive for fists, melee weapons, throwables, and consumables. Movement accuracy brackets each predicted shot with a narrow stationary-input window aligned to the authoritative 100 Hz server tick, then restores movement between rounds.
 
 GeekMenu settings are persisted through Tampermonkey storage and mirrored to page storage as a fallback. This keeps the selected aimbot profile and other controls stable across reloads and across the allowlisted project domains.
 
@@ -42,4 +42,4 @@ The client defaults API, assets, matchmaking, and ping/WebSocket discovery to th
 
 ## Source revision and rollback
 
-The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `0e6181d5`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
+The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `2c94a630`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
