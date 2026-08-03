@@ -24,14 +24,15 @@ export function esp(){
     try{
 
     // lineDrawer
-    const lineDrawer = me.container.lineDrawer;
-    try{lineDrawer.clear()}
+    let lineDrawer = me.container.lineDrawer;
+    try{lineDrawer?.clear()}
     catch{if(!unsafeWindow.game?.ws || unsafeWindow.game?.activePlayer?.netData?.dead) return;}
     if (state.isLineDrawerEnabled){
 
         if (!me.container.lineDrawer) {
             me.container.lineDrawer = new PIXI.Graphics();
             me.container.addChild(me.container.lineDrawer);
+            lineDrawer = me.container.lineDrawer;
         }
             
         // For each player
@@ -58,13 +59,14 @@ export function esp(){
     }
 
     // nadeDrawer
-    const nadeDrawer = me.container.nadeDrawer;
+    let nadeDrawer = me.container.nadeDrawer;
     try{nadeDrawer?.clear()}
     catch{if(!unsafeWindow.game?.ws || unsafeWindow.game?.activePlayer?.netData?.dead) return;}
     if (state.isNadeDrawerEnabled){
         if (!me.container.nadeDrawer) {
             me.container.nadeDrawer = new PIXI.Graphics();
             me.container.addChild(me.container.nadeDrawer);
+            nadeDrawer = me.container.nadeDrawer;
         }
     
         Object.values(unsafeWindow.game.objectCreator.idToObj)
@@ -96,8 +98,8 @@ export function esp(){
     }
 
     // flashlightDrawer(laserDrawer)
-    const laserDrawer = me.container.laserDrawer;
-    try{laserDrawer.clear()}
+    let laserDrawer = me.container.laserDrawer;
+    try{laserDrawer?.clear()}
     catch{if(!unsafeWindow.game?.ws || unsafeWindow.game?.activePlayer?.netData?.dead) return;}
     if (state.isLaserDrawerEnabled) {
         const curWeapon = findWeap(me);
@@ -106,6 +108,7 @@ export function esp(){
         if ( !me.container.laserDrawer ) {
             me.container.laserDrawer = new PIXI.Graphics();
             me.container.addChildAt(me.container.laserDrawer, 0);
+            laserDrawer = me.container.laserDrawer;
         }
     
         function laserPointer(

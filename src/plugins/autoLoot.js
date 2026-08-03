@@ -1,35 +1,42 @@
 import { state } from '../vars.js';
 
 function autoLoot(){
+    const installMobileLootMode = (data) => {
+        if (!data || data.__survevGptAutoLootInstalled) return;
+
+        Object.defineProperty(data, '__survevGptAutoLootInstalled', {
+            configurable: true,
+            value: true,
+        });
+
+        for (const property of ['isMobile', 'useTouch']) {
+            const nativeValue = data[property];
+            let currentValue = nativeValue;
+            Object.defineProperty(data, property, {
+                configurable: true,
+                get() {
+                    return state.isAutoLootEnabled ? true : currentValue;
+                },
+                set(value) {
+                    currentValue = value;
+                },
+            });
+        }
+    };
+
+    let basicDataInfo = unsafeWindow.basicDataInfo;
     Object.defineProperty(unsafeWindow, 'basicDataInfo', {
+        configurable: true,
         get () {
-            return this._basicDataInfo;
+            return basicDataInfo;
         },
         set(value) {
-            this._basicDataInfo = value;
-            
-            if (!value) return;
-            
-            Object.defineProperty(unsafeWindow.basicDataInfo, 'isMobile', {
-                get () {
-                    return state.isAutoLootEnabled ? true : this._isMobile;
-                },
-                set(value) {
-                    this._isMobile = value;
-                }
-            });
-            
-            Object.defineProperty(unsafeWindow.basicDataInfo, 'useTouch', {
-                get () {
-                    return state.isAutoLootEnabled ? true : this._useTouch;
-                },
-                set(value) {
-                    this._useTouch = value;
-                }
-            });
-            
+            basicDataInfo = value;
+            installMobileLootMode(value);
         }
     });
+
+    installMobileLootMode(basicDataInfo);
 }
 
 autoLoot();

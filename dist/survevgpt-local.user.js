@@ -1491,25 +1491,17 @@
       stone_04: 0xeb175a,
       stone_05: 0xeb175a,
       bunker_storm_01: 14934793,
-  },
-  sizes = {
-      stone_02: 6,
-      tree_03: 8,
-      stone_04: 6,
-      stone_05: 6,
-      bunker_storm_01: 1.75,
   };
 
   unsafeWindow.mapColorizing = map => {
-      if (!state.isMapColorizingEnabled) return;
+      if (!state.isMapColorizingEnabled || !Array.isArray(map)) return;
+
       map.forEach(object => {
-          if ( !colors[object.obj.type] ) return;
+          const color = colors[object?.obj?.type];
+          if (color === undefined || !Array.isArray(object.shapes)) return;
+
           object.shapes.forEach(shape => {
-              shape.color = colors[object.obj.type];
-              console.log(object);
-              if ( !sizes[object.obj.type] ) return;
-              shape.scale = sizes[object.obj.type];
-              console.log(object);
+              if (shape) shape.color = color;
           });
       });
   };
@@ -1852,35 +1844,42 @@
   removeCeilings();
 
   function autoLoot(){
+      const installMobileLootMode = (data) => {
+          if (!data || data.__survevGptAutoLootInstalled) return;
+
+          Object.defineProperty(data, '__survevGptAutoLootInstalled', {
+              configurable: true,
+              value: true,
+          });
+
+          for (const property of ['isMobile', 'useTouch']) {
+              const nativeValue = data[property];
+              let currentValue = nativeValue;
+              Object.defineProperty(data, property, {
+                  configurable: true,
+                  get() {
+                      return state.isAutoLootEnabled ? true : currentValue;
+                  },
+                  set(value) {
+                      currentValue = value;
+                  },
+              });
+          }
+      };
+
+      let basicDataInfo = unsafeWindow.basicDataInfo;
       Object.defineProperty(unsafeWindow, 'basicDataInfo', {
+          configurable: true,
           get () {
-              return this._basicDataInfo;
+              return basicDataInfo;
           },
           set(value) {
-              this._basicDataInfo = value;
-              
-              if (!value) return;
-              
-              Object.defineProperty(unsafeWindow.basicDataInfo, 'isMobile', {
-                  get () {
-                      return state.isAutoLootEnabled ? true : this._isMobile;
-                  },
-                  set(value) {
-                      this._isMobile = value;
-                  }
-              });
-              
-              Object.defineProperty(unsafeWindow.basicDataInfo, 'useTouch', {
-                  get () {
-                      return state.isAutoLootEnabled ? true : this._useTouch;
-                  },
-                  set(value) {
-                      this._useTouch = value;
-                  }
-              });
-              
+              basicDataInfo = value;
+              installMobileLootMode(value);
           }
       });
+
+      installMobileLootMode(basicDataInfo);
   }
 
   autoLoot();
@@ -2058,33 +2057,24 @@
   }
 
   function betterZoom(){
-      Object.defineProperty(unsafeWindow.game.camera, 'zoom', {
-          get() {
-              return Math.max(unsafeWindow.game.camera.targetZoom - (state.isZoomEnabled ? 0.45 : 0), 0.35);
-          },
-          set(value) {
-          }
+      const camera = unsafeWindow.game.camera;
+      if (!camera || camera.__survevGptZoomOverridden) return;
+
+      Object.defineProperty(camera, '__survevGptZoomOverridden', {
+          configurable: true,
+          value: true,
       });
 
-      let oldScope = unsafeWindow.game.activePlayer.localData.scope;
-      Object.defineProperty(unsafeWindow.game.camera, 'targetZoom', {
-          get(){
-              return this._targetZoom;
+      Object.defineProperty(camera, 'zoom', {
+          configurable: true,
+          get() {
+              const targetZoom = Number(this.targetZoom);
+              const nativeZoom = Number(this.sdArG);
+              const baseZoom = Number.isFinite(targetZoom) ? targetZoom : nativeZoom;
+              return Math.max(baseZoom - (state.isZoomEnabled ? 0.45 : 0), 0.35);
           },
           set(value) {
-              const newScope = unsafeWindow.game.activePlayer.localData.scope;
-              const inventory = unsafeWindow.game.activePlayer.localData.inventory;
-
-              const scopes = ['1xscope', '2xscope', '4xscope', '8xscope', '15xscope'];
-
-              // console.log(value, oldScope, newScope, newScope == oldScope, (inventory['2xscope'] || inventory['4xscope'] || inventory['8xscope'] || inventory['15xscope']));
-              if ( (newScope == oldScope) && (inventory['2xscope'] || inventory['4xscope'] || inventory['8xscope'] || inventory['15xscope']) && value >= this._targetZoom
-                  || scopes.indexOf(newScope) > scopes.indexOf(oldScope) && value >= this._targetZoom
-              ) return;
-
-              oldScope = unsafeWindow.game.activePlayer.localData.scope;
-
-              this._targetZoom = value;
+              this.sdArG = value;
           }
       });
   }
@@ -2191,14 +2181,15 @@
       try{
 
       // lineDrawer
-      const lineDrawer = me.container.lineDrawer;
-      try{lineDrawer.clear();}
+      let lineDrawer = me.container.lineDrawer;
+      try{lineDrawer?.clear();}
       catch{if(!unsafeWindow.game?.ws || unsafeWindow.game?.activePlayer?.netData?.dead) return;}
       if (state.isLineDrawerEnabled){
 
           if (!me.container.lineDrawer) {
               me.container.lineDrawer = new PIXI.Graphics();
               me.container.addChild(me.container.lineDrawer);
+              lineDrawer = me.container.lineDrawer;
           }
               
           // For each player
@@ -2225,13 +2216,14 @@
       }
 
       // nadeDrawer
-      const nadeDrawer = me.container.nadeDrawer;
+      let nadeDrawer = me.container.nadeDrawer;
       try{nadeDrawer?.clear();}
       catch{if(!unsafeWindow.game?.ws || unsafeWindow.game?.activePlayer?.netData?.dead) return;}
       if (state.isNadeDrawerEnabled){
           if (!me.container.nadeDrawer) {
               me.container.nadeDrawer = new PIXI.Graphics();
               me.container.addChild(me.container.nadeDrawer);
+              nadeDrawer = me.container.nadeDrawer;
           }
       
           Object.values(unsafeWindow.game.objectCreator.idToObj)
@@ -2263,8 +2255,8 @@
       }
 
       // flashlightDrawer(laserDrawer)
-      const laserDrawer = me.container.laserDrawer;
-      try{laserDrawer.clear();}
+      let laserDrawer = me.container.laserDrawer;
+      try{laserDrawer?.clear();}
       catch{if(!unsafeWindow.game?.ws || unsafeWindow.game?.activePlayer?.netData?.dead) return;}
       if (state.isLaserDrawerEnabled) {
           const curWeapon = findWeap(me);
@@ -2273,6 +2265,7 @@
           if ( !me.container.laserDrawer ) {
               me.container.laserDrawer = new PIXI.Graphics();
               me.container.addChildAt(me.container.laserDrawer, 0);
+              laserDrawer = me.container.laserDrawer;
           }
       
           function laserPointer(
