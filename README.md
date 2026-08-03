@@ -1,17 +1,39 @@
-# SurvevGPT local research harness
+# SurvevGPT source-native research client
 
-This is an allowlisted port of the Krity gameplay instrumentation modules for authorized white-box security testing. Tampermonkey may inject the bootstrap globally, but the runtime allowlist contains only `localhost` and `geekbar.xyz` and aborts before any harness hooks initialize elsewhere. Resource interception remains scoped to those authorized hosts.
+This repository packages the checked-in Survev client source as a self-contained Tampermonkey userscript for authorized testing on `localhost` and `geekbar.xyz`. It does not patch or regex-rewrite an obfuscated production bundle.
 
-The single source of truth is `src/urlPolicy.js`. Edit only `ALLOWED_URLS`, then run `npm test && npm run build`; Tampermonkey resource interception metadata is generated from the same array.
+The source-native build lives in the adjacent `survev` repository. `survev/client/src/research/` implements features through typed `Game`, input, player, camera, and Pixi APIs. The native Vite build emits one IIFE and embeds every generated texture atlas. The loader blocks the stock JavaScript client at `document-start`, preserves the page and non-JavaScript assets/API endpoints, and executes the embedded client in the page realm.
 
 ## Build
+
+From this directory:
 
 ```sh
 npm install
 npm test
-npm run build
+npm run build:native
 ```
 
-Install `dist/survevgpt-local.user.js` in a userscript manager and open a locally served development client. Press `F8` to toggle the research menu.
+The final artifact is `dist/survevgpt-native.user.js`. It is intentionally large (approximately 19 MB) because it contains the complete source-built client and its generated atlases.
 
-The modules intentionally depend on internal client objects and may need selector/patch updates as the local game client evolves.
+Install that file in Tampermonkey and open an allowlisted host. The legacy `dist/survevgpt-local.user.js` is retained only for rollback and comparison.
+
+## Controls
+
+- `[` toggles the research settings panel.
+- `Alt+B` toggles aimbot.
+- `Alt+N` toggles player tracers.
+
+Settings are disabled by default and persisted in `localStorage`. The native API is available as `window.__SURVEV_RESEARCH__` after a match creates the `Game` instance.
+
+Supported modules include typed aimbot targeting, spin aim, grenade-safe input, zoom scaling, tracers, grenade timer, auto-pickup, smoke and obstacle opacity, visible names, weapon cone, bump fire, and ammo-aware auto-switch. X-ray/ceiling removal and atlas recoloring deliberately fail closed because mutating Pixi texture validity caused the earlier renderer corruption.
+
+## Diagnostics
+
+`window.__SURVEVGPT_NATIVE_STATUS__` reports loader stages such as `authorized`, `stock-client-blocked`, `waiting-for-dom`, `payload-injected`, `client-ready`, and failure details. `window.__SURVEV_RESEARCH__.status` reports aimbot state and target counts.
+
+The client defaults API, assets, matchmaking, and ping/WebSocket discovery to the current page origin. `window.__SURVEV_NATIVE_CONFIG__` can optionally override regions, ping targets, pass type, or proxies before startup. No Geekbar server modification is required, but its server protocol must match the checked-in `survev/shared` protocol revision.
+
+## Source revision and rollback
+
+The native client was built from Survev commit `ab33209a92361f03fd6b0f0679629349e69fa2c9`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock Geekbar page is not modified.

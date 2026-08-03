@@ -9,7 +9,7 @@ async function walk(directory) {
     const entries = await readdir(directory, { withFileTypes: true });
     const files = [];
     for (const entry of entries) {
-        if (entry.name === 'node_modules' || entry.name === 'dist') continue;
+        if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'native-dist') continue;
         const path = join(directory, entry.name);
         files.push(...(entry.isDirectory() ? await walk(path) : [path]));
     }
