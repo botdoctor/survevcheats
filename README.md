@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.15. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.16. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -65,7 +65,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability filter. A target 
 
 | Setting | Behavior |
 | --- | --- |
-| Auto pickup | Requests pickup for the nearest eligible item. Empty primary or secondary gun slots are filled first. Cosmetic outfits and colored clothing are always ignored. |
+| Auto pickup | Requests pickup for the nearest eligible item. Empty primary or secondary gun slots are filled first. A melee weapon is collected only while the melee slot still contains fists, so an owned melee is never automatically replaced. Cosmetic outfits and colored clothing are always ignored. |
 | Upgrade guns | With both gun slots filled, only picks up a gun whose damage, fire rate, range, and spread score is at least 8% better than the active gun. |
 | Pickup supplies | Allows Auto pickup to collect useful non-gun loot, including helmets, armor, backpacks, scopes, ammo, healing items, and throwables. Disable it for gun-only automatic pickup. Cosmetic outfits remain excluded. |
 | Auto heal | Uses a healthkit when available, otherwise a bandage, when health is at or below the configured threshold and no other action is active. |
@@ -102,7 +102,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability filter. A target 
 
 ### Trust Lab
 
-Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.15 allows ordinary features, including movement accuracy, on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
+Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.16 allows ordinary features, including movement accuracy, on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
 
 | Setting | Behavior |
 | --- | --- |
@@ -161,4 +161,4 @@ The client defaults API, assets, matchmaking, and ping/WebSocket discovery to th
 
 ## Source revision and rollback
 
-The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `06cc3772`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
+The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `04da1abe`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
