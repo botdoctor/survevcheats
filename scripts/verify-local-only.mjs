@@ -49,9 +49,11 @@ const { metadata: renderedMetadata } = await import(new URL('../src/metadata.js'
 const webRequestRules = [...renderedMetadata.matchAll(/^\/\/ @webRequest\s+(.+)$/gm)]
     .flatMap((match) => JSON.parse(match[1]));
 const expectedSelectors = new Set(ALLOWED_URLS.flatMap((hostname) =>
-    ['app', 'shared'].flatMap((bundle) => ['http', 'https'].map((protocol) =>
-        `${protocol}://${hostname}/*${bundle}-*.js`
-    ))
+    (hostname === 'localhost' ? [hostname] : [hostname, `*.${hostname}`]).flatMap((host) =>
+        ['app', 'shared'].flatMap((bundle) => ['http', 'https'].map((protocol) =>
+            `${protocol}://${host}/*${bundle}-*.js`
+        ))
+    )
 ));
 if (
     webRequestRules.length !== expectedSelectors.size

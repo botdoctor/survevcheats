@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.1
+// @version      0.1.2
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
 // @match        *://*/*
 // @run-at       document-end
-// @webRequest   [{"selector":"http://localhost/*app-*.js","action":"cancel"},{"selector":"https://localhost/*app-*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*app-*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*app-*.js","action":"cancel"}]
-// @webRequest   [{"selector":"http://localhost/*shared-*.js","action":"cancel"},{"selector":"https://localhost/*shared-*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*shared-*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*shared-*.js","action":"cancel"}]
+// @webRequest   [{"selector":"http://localhost/*app-*.js","action":"cancel"},{"selector":"https://localhost/*app-*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*app-*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*app-*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/*app-*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/*app-*.js","action":"cancel"}]
+// @webRequest   [{"selector":"http://localhost/*shared-*.js","action":"cancel"},{"selector":"https://localhost/*shared-*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*shared-*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*shared-*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/*shared-*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/*shared-*.js","action":"cancel"}]
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @grant        GM_setValue
@@ -80,8 +80,15 @@
 
   const ALLOWED_URLS = Object.freeze(['localhost', 'geekbar.xyz']);
 
+  function isAllowedHostname(hostname) {
+      const normalized = hostname.toLowerCase().replace(/\.$/, '');
+      return ALLOWED_URLS.some((allowed) =>
+          normalized === allowed || normalized.endsWith(`.${allowed}`)
+      );
+  }
+
   function assertAllowedPage(location = window.location) {
-      if (!ALLOWED_URLS.includes(location.hostname)) {
+      if (!isAllowedHostname(location.hostname)) {
           throw new Error(`[SurvevGPT] Refusing to load on non-allowlisted host: ${location.hostname}`);
       }
       return Object.freeze({ hostname: location.hostname, allowedUrls: ALLOWED_URLS });
@@ -89,7 +96,7 @@
 
   function isAllowedUrl(value, base = window.location.href) {
       try {
-          return ALLOWED_URLS.includes(new URL(value, base).hostname);
+          return isAllowedHostname(new URL(value, base).hostname);
       } catch {
           return false;
       }
@@ -115,7 +122,7 @@
 
   (() => {
       const authorization = assertAllowedPage();
-      console.info('[SurvevGPT 0.1.1] Authorized page', authorization);
+      console.info('[SurvevGPT 0.1.2] Authorized page', authorization);
 
       __vitePreload(() => Promise.resolve().then(() => init),false?__VITE_PRELOAD__:undefined).catch((error) => {
           console.error('[SurvevGPT] Local research harness failed to initialize.', error);
