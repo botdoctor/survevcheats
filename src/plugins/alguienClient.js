@@ -17,10 +17,7 @@ class GameMod {
             this.initCounter("killsCounter");
         }
 
-        this.initMenu(); // left menu in lobby page
-        this.initRules(); // right menu in lobby page
-
-        this.setupWeaponBorderHandler();
+        this.initUiWhenReady();
     }
 
     initCounter(id) {
@@ -52,6 +49,24 @@ class GameMod {
     
     setAnimationFrameCallback() {
         this.animationFrameCallback = (callback) => setTimeout(callback, 1);
+    }
+
+    initUiWhenReady() {
+      let attempts = 0;
+      const tryInitialize = () => {
+        const lobbyReady = document.querySelector('#start-row-top')
+          && document.querySelector('#left-column')
+          && document.querySelector('#news-block');
+        if (!lobbyReady) {
+          if (++attempts < 200) setTimeout(tryInitialize, 50);
+          return;
+        }
+
+        this.initMenu();
+        this.initRules();
+        this.setupWeaponBorderHandler();
+      };
+      tryInitialize();
     }
 
     getKills() {
@@ -197,7 +212,10 @@ class GameMod {
           document.getElementsByClassName("ui-weapon-name"),
         );
         weaponNames.forEach((weaponNameElement) => {
+          if (weaponNameElement.__survevGptBorderObserver) return;
           const weaponContainer = weaponNameElement.closest(".ui-weapon-switch");
+          if (!weaponContainer) return;
+          Object.defineProperty(weaponNameElement, '__survevGptBorderObserver', { value: true });
           const observer = new MutationObserver(() => {
             const weaponName = weaponNameElement.textContent.trim();
             let border = "#FFFFFF";
@@ -239,6 +257,8 @@ class GameMod {
     //menu
     initMenu() {
         const middleRow = document.querySelector("#start-row-top");
+        const leftColumn = document.querySelector('#left-column');
+        if (!middleRow || !leftColumn || document.querySelector('#KrityHack')) return;
         Object.assign(middleRow.style, {
             display: "flex",
             flexDirection: "row",
@@ -324,7 +344,6 @@ class GameMod {
         additionalDescription.innerHTML = `Your support helps us develop the project and provide better updates!`
         menu.append(additionalDescription);
 
-        const leftColumn = document.querySelector('#left-column');
         leftColumn.innerHTML = ``;
         leftColumn.style.marginTop = "10px";
         leftColumn.style.marginBottom = "27px";
@@ -335,6 +354,7 @@ class GameMod {
 
     initRules() {
         const newsBlock = document.querySelector("#news-block");
+        if (!newsBlock) return;
         newsBlock.innerHTML = `
 <h3 class="news-header">KrityHack v${version}</h3>
 <div id="news-current">

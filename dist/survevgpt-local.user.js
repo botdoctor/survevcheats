@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.3
+// @version      0.1.4
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
@@ -122,11 +122,13 @@
 
   (() => {
       const authorization = assertAllowedPage();
-      console.info('[SurvevGPT 0.1.3] Authorized page', authorization);
+      console.info('[SurvevGPT 0.1.4] Authorized page', authorization);
 
       const initialize = () => {
-          __vitePreload(() => Promise.resolve().then(() => init),false?__VITE_PRELOAD__:undefined).catch((error) => {
-              console.error('[SurvevGPT] Local research harness failed to initialize.', error);
+          queueMicrotask(() => {
+              __vitePreload(() => Promise.resolve().then(() => init),false?__VITE_PRELOAD__:undefined).catch((error) => {
+                  console.error('[SurvevGPT] Local research harness failed to initialize.', error);
+              });
           });
       };
 
@@ -661,10 +663,7 @@
               this.initCounter("killsCounter");
           }
 
-          this.initMenu(); // left menu in lobby page
-          this.initRules(); // right menu in lobby page
-
-          this.setupWeaponBorderHandler();
+          this.initUiWhenReady();
       }
 
       initCounter(id) {
@@ -696,6 +695,24 @@
       
       setAnimationFrameCallback() {
           this.animationFrameCallback = (callback) => setTimeout(callback, 1);
+      }
+
+      initUiWhenReady() {
+        let attempts = 0;
+        const tryInitialize = () => {
+          const lobbyReady = document.querySelector('#start-row-top')
+            && document.querySelector('#left-column')
+            && document.querySelector('#news-block');
+          if (!lobbyReady) {
+            if (++attempts < 200) setTimeout(tryInitialize, 50);
+            return;
+          }
+
+          this.initMenu();
+          this.initRules();
+          this.setupWeaponBorderHandler();
+        };
+        tryInitialize();
       }
 
       getKills() {
@@ -841,7 +858,10 @@
             document.getElementsByClassName("ui-weapon-name"),
           );
           weaponNames.forEach((weaponNameElement) => {
+            if (weaponNameElement.__survevGptBorderObserver) return;
             const weaponContainer = weaponNameElement.closest(".ui-weapon-switch");
+            if (!weaponContainer) return;
+            Object.defineProperty(weaponNameElement, '__survevGptBorderObserver', { value: true });
             const observer = new MutationObserver(() => {
               const weaponName = weaponNameElement.textContent.trim();
               let border = "#FFFFFF";
@@ -883,6 +903,8 @@
       //menu
       initMenu() {
           const middleRow = document.querySelector("#start-row-top");
+          const leftColumn = document.querySelector('#left-column');
+          if (!middleRow || !leftColumn || document.querySelector('#KrityHack')) return;
           Object.assign(middleRow.style, {
               display: "flex",
               flexDirection: "row",
@@ -968,7 +990,6 @@
           additionalDescription.innerHTML = `Your support helps us develop the project and provide better updates!`;
           menu.append(additionalDescription);
 
-          const leftColumn = document.querySelector('#left-column');
           leftColumn.innerHTML = ``;
           leftColumn.style.marginTop = "10px";
           leftColumn.style.marginBottom = "27px";
@@ -979,6 +1000,7 @@
 
       initRules() {
           const newsBlock = document.querySelector("#news-block");
+          if (!newsBlock) return;
           newsBlock.innerHTML = `
 <h3 class="news-header">KrityHack v${version}</h3>
 <div id="news-current">
