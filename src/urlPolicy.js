@@ -1,4 +1,4 @@
-export const ALLOWED_URLS = Object.freeze(['localhost', 'geekbar.xyz']);
+export const ALLOWED_URLS = Object.freeze(['localhost', 'survev.io']);
 
 export function isAllowedUrl(value, base = window.location.href) {
     try {
