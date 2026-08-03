@@ -41,6 +41,9 @@ if (allowlistDeclarations.length !== 1 || !allowlistDeclarations[0].endsWith('/s
 }
 
 const metadata = await readFile(new URL('../src/metadata.js', import.meta.url), 'utf8');
+if (!metadata.includes('// @run-at       document-start')) {
+    throw new Error('The userscript must start before the original client modules are requested.');
+}
 const matchRules = [...metadata.matchAll(/^\/\/ @match\s+(.+)$/gm)].map((match) => match[1]);
 if (matchRules.length !== 1 || matchRules[0] !== '*://*/*') {
     throw new Error('Userscript metadata must inject globally so the runtime allowlist is authoritative.');
@@ -57,5 +60,10 @@ if (
     webRequestRules.length !== expectedSelectors.size
     || webRequestRules.some((rule) => !expectedSelectors.has(rule.selector) || rule.action !== 'cancel')
 ) throw new Error('Rendered resource interception rules do not match ALLOWED_URLS.');
+
+const removeCeilings = await readFile(new URL('../src/plugins/removeCeilings.js', import.meta.url), 'utf8');
+if (/Object\.defineProperty\(\s*Object\.prototype/.test(removeCeilings)) {
+    throw new Error('Rendering hooks must not modify Object.prototype.');
+}
 
 console.log('Local-only verification passed.');

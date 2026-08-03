@@ -1,36 +1,36 @@
-export function smokeOpacity(){
-    console.log('smokeopacity')
-    
-    const particles = unsafeWindow.game.smokeBarn.particles;
-    console.log('smokeopacity', particles, unsafeWindow.game.smokeBarn.particles)
-    particles.push = new Proxy( particles.push, {
-        apply( target, thisArgs, args ) {
-            console.log('smokeopacity', args[0]);
-            const particle = args[0];
+import { state } from '../vars.js';
 
-            Object.defineProperty(particle.sprite, 'alpha', {
-                get() {
-                    return state.isSmokeOpacityEnabled ? 0.12 : this._survevGptAlpha ?? 1;
-                },
-                set(value) {
-                    this._survevGptAlpha = value;
-                }
-            });
+export function smokeOpacity() {
+    const particles = unsafeWindow.game?.smokeBarn?.particles;
+    if (!Array.isArray(particles)) return;
 
-            return Reflect.apply( ...arguments );
+    const adaptParticle = (particle) => {
+        const sprite = particle?.sprite;
+        if (!sprite || sprite.__survevGptSmokeOpacity) return;
 
-        }
-    });
-
-    particles.forEach(particle => {
-        Object.defineProperty(particle.sprite, 'alpha', {
+        let nativeAlpha = sprite.alpha;
+        Object.defineProperty(sprite, '__survevGptSmokeOpacity', { configurable: true, value: true });
+        Object.defineProperty(sprite, 'alpha', {
+            configurable: true,
             get() {
-                return state.isSmokeOpacityEnabled ? 0.12 : this._survevGptAlpha ?? 1;
+                return state.isSmokeOpacityEnabled ? 0.12 : nativeAlpha;
             },
             set(value) {
-                this._survevGptAlpha = value;
-            }
+                nativeAlpha = value;
+            },
         });
-    });
+    };
+
+    if (!particles.push.__survevGptSmokeOpacity) {
+        const wrappedPush = new Proxy(particles.push, {
+            apply(target, thisArgs, args) {
+                args.forEach(adaptParticle);
+                return Reflect.apply(target, thisArgs, args);
+            },
+        });
+        Object.defineProperty(wrappedPush, '__survevGptSmokeOpacity', { value: true });
+        particles.push = wrappedPush;
+    }
+
+    particles.forEach(adaptParticle);
 }
-import { state } from '../vars.js';

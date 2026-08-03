@@ -44,10 +44,16 @@ export let inputs = [];
 let portraitLastFlip = 0;
 let portraitValue = false;
 unsafeWindow.initGameControls = function(gameControls){
+    if (!gameControls) return gameControls;
+
     for (const command of inputs){
-        gameControls.addInput(inputCommands[command]);
+        const input = inputCommands[command];
+        if (input != null) gameControls.addInput?.(input);
     }
     inputs = [];
+
+    const game = unsafeWindow.game;
+    const firing = Boolean(game?.touch?.shotDetected || game?.inputBinds?.isBindDown?.(inputCommands.Fire));
 
     if (state.isMovementAccuracyEnabled && (gameControls.shootStart || gameControls.shootHold)) {
         gameControls.moveLeft = false;
@@ -67,7 +73,7 @@ unsafeWindow.initGameControls = function(gameControls){
     }
 
     // mobile aimbot
-    if (gameControls.touchMoveActive && unsafeWindow.lastAimPos){
+    if (gameControls.touchMoveActive && unsafeWindow.lastAimPos && gameControls.toMouseDir){
         // gameControls.toMouseDir
         gameControls.toMouseLen = 18;
 
@@ -76,18 +82,15 @@ unsafeWindow.initGameControls = function(gameControls){
             unsafeWindow.lastAimPos.clientY - unsafeWindow.innerHeight / 2,
         ) - Math.PI / 2;
 
-        if ( (  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && unsafeWindow.lastAimPos && unsafeWindow.game.activePlayer.localData.curWeapIdx != 3) {
+        if (firing && game?.activePlayer?.localData?.curWeapIdx !== 3) {
             gameControls.toMouseDir.x = Math.cos(atan);
-
-        }
-        if ( (  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && unsafeWindow.lastAimPos && unsafeWindow.game.activePlayer.localData.curWeapIdx != 3) {
             gameControls.toMouseDir.y = Math.sin(atan);
         }
     }
 
     // autoMelee
-    if ((  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && unsafeWindow.aimTouchMoveDir) {
-        if (unsafeWindow.aimTouchDistanceToEnemy < 4) gameControls.addInput(inputCommands['EquipMelee']);
+    if (firing && unsafeWindow.aimTouchMoveDir && gameControls.touchMoveDir) {
+        if (unsafeWindow.aimTouchDistanceToEnemy < 4) gameControls.addInput?.(inputCommands.EquipMelee);
         gameControls.touchMoveActive = true;
         gameControls.touchMoveLen = 255;
         gameControls.touchMoveDir.x = unsafeWindow.aimTouchMoveDir.x;

@@ -40,7 +40,10 @@ export function overlayToggle(){
     overlay.style.display = state.isOverlayEnabled ? 'block' : 'none';
 }
 
-document.querySelector('#ui-game').append(overlay);
-overlay.style.display = state.isOverlayEnabled ? 'block' : 'none';
-document.querySelector('#ui-top-left').insertBefore(krityTitle, document.querySelector('#ui-top-left').firstChild);
-document.querySelector('#ui-game').append(aimbotDot);
+const uiGame = document.querySelector('#ui-game');
+const uiTopLeft = document.querySelector('#ui-top-left');
+if (uiGame) {
+    uiGame.append(overlay, aimbotDot);
+    overlay.style.display = state.isOverlayEnabled ? 'block' : 'none';
+}
+if (uiTopLeft) uiTopLeft.insertBefore(krityTitle, uiTopLeft.firstChild);

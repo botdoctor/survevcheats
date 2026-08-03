@@ -10,8 +10,7 @@ function autoLoot(){
         });
 
         for (const property of ['isMobile', 'useTouch']) {
-            const nativeValue = data[property];
-            let currentValue = nativeValue;
+            let currentValue = data[property];
             Object.defineProperty(data, property, {
                 configurable: true,
                 get() {

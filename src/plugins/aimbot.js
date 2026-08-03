@@ -13,7 +13,7 @@ export function aimBot() {
         const players = game?.playerBarn?.playerPool?.pool;
         const me = game?.activePlayer;
 
-        if (!Array.isArray(players) || !me?.netData || !me?.pos) return;
+        if (!Array.isArray(players) || !me?.netData || !me?.pos || !game?.camera?.pointToScreen || !game?.input?.mousePos) return;
 
         const meTeam = getTeam(me);
 
@@ -59,7 +59,11 @@ export function aimBot() {
 
             const predictedEnemyPos = calculatePredictedPosForShoot(enemy, me);
 
-            if (!predictedEnemyPos) return;
+            if (!predictedEnemyPos) {
+                unsafeWindow.lastAimPos = null;
+                aimbotDot.style.display = 'none';
+                return;
+            }
 
             unsafeWindow.lastAimPos = {
                 clientX: predictedEnemyPos.x,
@@ -134,6 +138,9 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
     }
 
     const deltaTime = (dateNow - state.lastFrames[enemy.__id][0][0]) / 1000; // Time since last frame in seconds
+    if (!Number.isFinite(deltaTime) || deltaTime <= 0) {
+        return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+    }
 
     const enemyVelocity = {
         x: (enemyPos._x - state.lastFrames[enemy.__id][0][1]._x) / deltaTime,
@@ -166,6 +173,9 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
 
     if (Math.abs(a) < 1e-6) {
         console.log('Linear solution bullet speed is much greater than velocity')
+        if (Math.abs(b) < 1e-6) {
+            return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+        }
         t = -c / b;
     } else {
         const discriminant = b ** 2 - 4 * a * c;
@@ -183,7 +193,7 @@ function calculatePredictedPosForShoot(enemy, curPlayer) {
     }
 
 
-    if (t < 0) {
+    if (!Number.isFinite(t) || t < 0) {
         console.log("Negative time, shooting at current position");
         return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
     }

@@ -1,6 +1,7 @@
 let lastTime = Date.now();
 let showing = false;
 let timer = null;
+let timerGame = null;
 export function grenadeTimer(){
     if (!state.isGrenadeTimerEnabled) {
         showing = false;
@@ -8,14 +9,21 @@ export function grenadeTimer(){
         timer = null;
         return;
     }
-    if (!(unsafeWindow.game?.ws && unsafeWindow.game?.activePlayer?.localData?.curWeapIdx != null && unsafeWindow.game?.activePlayer?.netData?.activeWeapon != null)) return; 
+    const game = unsafeWindow.game;
+    if (timerGame && timerGame !== game) {
+        timer?.destroy?.();
+        timer = null;
+        showing = false;
+    }
+    timerGame = game;
+    if (!(game?.ws && game?.activePlayer?.localData?.curWeapIdx != null && game?.activePlayer?.netData?.activeWeapon != null)) return;
 
     try{
     let elapsed = (Date.now() - lastTime) / 1000;
-    const player = unsafeWindow.game.activePlayer;
+    const player = game.activePlayer;
     const activeItem = player.netData.activeWeapon;
 
-    if (3 !== unsafeWindow.game.activePlayer.localData.curWeapIdx 
+    if (3 !== player.localData.curWeapIdx
         || player.throwableState !== "cook"
         || (!activeItem.includes('frag') && !activeItem.includes('mirv') && !activeItem.includes('martyr_nade'))
     )
@@ -33,14 +41,15 @@ export function grenadeTimer(){
         if(timer) {
             timer.destroy();
         }
+        if (typeof unsafeWindow.pieTimerClass !== 'function' || !game.pixi?.stage?.addChild) return;
         timer = new unsafeWindow.pieTimerClass();
-        unsafeWindow.game.pixi.stage.addChild(timer.container);
+        game.pixi.stage.addChild(timer.container);
         timer.start("Grenade", 0, time);
         showing = true;
         lastTime = Date.now();
         return;
     }
-    timer.update(elapsed - timer.elapsed, unsafeWindow.game.camera);
+    timer.update(elapsed - timer.elapsed, game.camera);
     }catch(err){
         console.error('grenadeTimer', err);
     }

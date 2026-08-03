@@ -56,8 +56,10 @@ function keybinds(){
         const mouseX = event.clientX;
         const mouseY = event.clientY;
 
-        const players = unsafeWindow.game.playerBarn.playerPool.pool;
-        const me = unsafeWindow.game.activePlayer;
+        const game = unsafeWindow.game;
+        const players = game?.playerBarn?.playerPool?.pool;
+        const me = game?.activePlayer;
+        if (!Array.isArray(players) || !me) return;
         const meTeam = getTeam(me);
 
         let enemy = null;
@@ -65,9 +67,10 @@ function keybinds(){
 
         players.forEach((player) => {
             // We miss inactive or dead players
-            if (!player.active || player.netData.dead || player.downed || me.__id === player.__id || getTeam(player) == meTeam) return;
+            if (!player?.active || !player.netData || player.netData.dead || player.downed || !player.pos || me.__id === player.__id || getTeam(player) == meTeam) return;
 
-            const screenPlayerPos = unsafeWindow.game.camera.pointToScreen({x: player.pos._x, y: player.pos._y});
+            const screenPlayerPos = game.camera?.pointToScreen?.({x: player.pos._x, y: player.pos._y});
+            if (!screenPlayerPos) return;
             const distanceToEnemyFromMouse = (screenPlayerPos.x - mouseX) ** 2 + (screenPlayerPos.y - mouseY) ** 2;
 
             if (distanceToEnemyFromMouse < minDistanceToEnemyFromMouse) {
@@ -77,13 +80,15 @@ function keybinds(){
         });
 
         if (enemy) {
-            const enemyIndex = state.friends.indexOf(enemy.nameText._text);
+            const enemyName = enemy.nameText?._text;
+            if (!enemyName) return;
+            const enemyIndex = state.friends.indexOf(enemyName);
             if (~enemyIndex) {
                 state.friends.splice(enemyIndex, 1);
-                console.log(`Removed player with name ${enemy.nameText._text} from friends.`);
+                console.log(`Removed player with name ${enemyName} from friends.`);
             }else {
-                state.friends.push(enemy.nameText._text);
-                console.log(`Added player with name ${enemy.nameText._text} to friends.`);
+                state.friends.push(enemyName);
+                console.log(`Added player with name ${enemyName} to friends.`);
             }
         }
     });

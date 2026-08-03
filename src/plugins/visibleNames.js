@@ -2,50 +2,42 @@ import { getTeam } from '../utils.js';
 import { state } from '../vars.js';
 import { BLUE, RED, GREEN } from '../constants.js';
 
+export function visibleNames() {
+    const pool = unsafeWindow.game?.playerBarn?.playerPool?.pool;
+    if (!Array.isArray(pool)) return;
 
-export function visibleNames(){
-    const pool = unsafeWindow.game.playerBarn.playerPool.pool;
+    const adaptPlayerName = (player) => {
+        const nameText = player?.nameText;
+        if (!nameText || nameText.__survevGptVisibleNames) return;
 
-    console.log('visibleNames', pool)
-
-    pool.push = new Proxy( pool.push, {
-        apply( target, thisArgs, args ) {
-            const player = args[0];
-            Object.defineProperty(player.nameText, 'visible', {
-                get(){
-                    if (!state.isVisibleNamesEnabled) return this._survevGptVisible ?? false;
-                    const me = unsafeWindow.game.activePlayer;
-                    const meTeam = getTeam(me);
-                    const playerTeam = getTeam(player);
-                    // console.log('visible', player?.nameText?._text, playerTeam === meTeam ? BLUE : RED, player, me, playerTeam, meTeam)
-                    this.tint = playerTeam === meTeam ? BLUE : state.friends.includes(player.nameText._text) ? GREEN : RED;
-                    player.nameText.style.fontSize = 40;
-                    return true;
-                },
-                set(value){
-                    this._survevGptVisible = value;
-                }
-            });
-
-            return Reflect.apply( ...arguments );
-        }
-    });
-
-    pool.forEach(player => {
-        Object.defineProperty(player.nameText, 'visible', {
-            get(){
-                if (!state.isVisibleNamesEnabled) return this._survevGptVisible ?? false;
-                const me = unsafeWindow.game.activePlayer;
-                const meTeam = getTeam(me);
+        let nativeVisible = nameText.visible;
+        Object.defineProperty(nameText, '__survevGptVisibleNames', { configurable: true, value: true });
+        Object.defineProperty(nameText, 'visible', {
+            configurable: true,
+            get() {
+                if (!state.isVisibleNamesEnabled) return nativeVisible;
+                const meTeam = getTeam(unsafeWindow.game?.activePlayer);
                 const playerTeam = getTeam(player);
-                // console.log('visible', player?.nameText?._text, playerTeam === meTeam ? BLUE : RED, player, me, playerTeam, meTeam)
-                this.tint = playerTeam === meTeam ? BLUE : RED;
-                player.nameText.style.fontSize = 40;
+                this.tint = playerTeam === meTeam ? BLUE : state.friends.includes(this._text) ? GREEN : RED;
+                if (this.style) this.style.fontSize = 40;
                 return true;
             },
-            set(value){
-                this._survevGptVisible = value;
-            }
+            set(value) {
+                nativeVisible = value;
+            },
         });
-    });
+    };
+
+    if (!pool.push.__survevGptVisibleNames) {
+        const wrappedPush = new Proxy(pool.push, {
+            apply(target, thisArgs, args) {
+                args.forEach(adaptPlayerName);
+                return Reflect.apply(target, thisArgs, args);
+            },
+        });
+        Object.defineProperty(wrappedPush, '__survevGptVisibleNames', { value: true });
+        pool.push = wrappedPush;
+    }
+
+    pool.forEach(adaptPlayerName);
 }

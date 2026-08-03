@@ -13,12 +13,12 @@ const resourceRule = () => JSON.stringify(
 export const metadata = `// ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.2
+// @version      0.1.3
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
 // @match        *://*/*
-// @run-at       document-end
+// @run-at       document-start
 // @webRequest   ${resourceRule()}
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addElement

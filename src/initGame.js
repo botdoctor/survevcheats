@@ -4,12 +4,14 @@ import { overrideMousePos } from './overrideMousePos.js';
 import { betterZoom } from './plugins/betterZoom.js';
 import { smokeOpacity } from './plugins/smokeOpacity.js';
 import { visibleNames } from './plugins/visibleNames.js';
+import { removeCeilings } from './plugins/removeCeilings.js';
 import { initTicker } from './initTicker.js';
 import { state } from './vars.js';
 
 
-let tickerOneTime = false;
+let initGeneration = 0;
 export function initGame() {
+    const generation = ++initGeneration;
     console.log('init game...........');
 
     unsafeWindow.lastAimPos = null;
@@ -20,15 +22,17 @@ export function initGame() {
     state.lastFrames = {};
 
     const tasks = [
-        {isApplied: false, condition: () => unsafeWindow.game?.input?.mousePos && unsafeWindow.game?.touch?.aimMovement?.toAimDir, action: overrideMousePos},
-        {isApplied: false, condition: () => unsafeWindow.game?.input?.mouseButtonsOld, action: bumpFire},
+        {isApplied: false, condition: () => unsafeWindow.game?.input?.mousePos, action: overrideMousePos},
+        {isApplied: false, condition: () => typeof unsafeWindow.game?.inputBinds?.isBindPressed === 'function', action: bumpFire},
         {isApplied: false, condition: () => unsafeWindow.game?.activePlayer?.localData, action: betterZoom},
-        {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.smokeBarn?.particles?.push, action: smokeOpacity},
-        {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.playerBarn?.playerPool?.pool?.push, action: visibleNames},
-        {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker && unsafeWindow.game?.activePlayer?.container && unsafeWindow.game?.activePlayer?.pos, action: () => { if (!tickerOneTime) { tickerOneTime = true; initTicker(); } } },
+        {isApplied: false, condition: () => typeof unsafeWindow.game?.smokeBarn?.particles?.push === 'function', action: smokeOpacity},
+        {isApplied: false, condition: () => typeof unsafeWindow.game?.playerBarn?.playerPool?.pool?.push === 'function', action: visibleNames},
+        {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker, action: removeCeilings},
+        {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker && unsafeWindow.game?.activePlayer?.container && unsafeWindow.game?.activePlayer?.pos, action: initTicker},
     ];
 
     (function checkLocalData(){
+        if (generation !== initGeneration) return;
         if (!unsafeWindow?.game?.ws) {
             setTimeout(checkLocalData, 50);
             return;

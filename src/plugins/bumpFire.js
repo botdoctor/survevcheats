@@ -3,14 +3,20 @@ import { state } from "../vars.js";
 
 
 export function bumpFire(){
-    unsafeWindow.game.inputBinds.isBindPressed = new Proxy( unsafeWindow.game.inputBinds.isBindPressed, {
+    const inputBinds = unsafeWindow.game?.inputBinds;
+    const original = inputBinds?.isBindPressed;
+    if (typeof original !== 'function' || original.__survevGptBumpFire) return;
+
+    const wrapped = new Proxy(original, {
         apply( target, thisArgs, args ) {
             if (args[0] === inputCommands.Fire) {
                 return state.isBumpFireEnabled
-                    ? unsafeWindow.game.inputBinds.isBindDown(...args)
-                    : Reflect.apply(...arguments);
+                    ? Boolean(inputBinds.isBindDown?.(...args))
+                    : Reflect.apply(target, thisArgs, args);
             }
-            return Reflect.apply( ...arguments );
+            return Reflect.apply(target, thisArgs, args);
         }
     });
+    Object.defineProperty(wrapped, '__survevGptBumpFire', { value: true });
+    inputBinds.isBindPressed = wrapped;
 }

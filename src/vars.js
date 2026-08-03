@@ -16,7 +16,7 @@ let state = {
     get focusedEnemyStatus() {
         return this.isAimBotEnabled && this.focusedEnemy;
     },
-    isXrayEnabled: true,
+    isXrayEnabled: false,
     friends: [],
     lastFrames: {},
     enemyAimBot: null,
@@ -31,7 +31,7 @@ let state = {
     isBumpFireEnabled: true,
     isObstacleOpacityEnabled: true,
     isSmokeOpacityEnabled: true,
-    isMapColorizingEnabled: true,
+    isMapColorizingEnabled: false,
     isMovementInterpolationEnabled: true,
     isMovementAccuracyEnabled: false,
     isPortraitCullingEnabled: false,

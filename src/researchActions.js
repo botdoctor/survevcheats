@@ -70,3 +70,9 @@ export const researchActions = {
     },
 };
 
+unsafeWindow.addEventListener('beforeunload', () => {
+    for (const key of ['__SURVEVGPT_SPEC_SWEEP__', '__SURVEVGPT_INPUT_REPLAY__']) {
+        if (unsafeWindow[key]) clearInterval(unsafeWindow[key]);
+        unsafeWindow[key] = null;
+    }
+}, { once: true });

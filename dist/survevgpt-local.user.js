@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.2
+// @version      0.1.3
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
 // @match        *://*/*
-// @run-at       document-end
+// @run-at       document-start
 // @webRequest   [{"selector":"http://localhost/js/*.js","action":"cancel"},{"selector":"https://localhost/js/*.js","action":"cancel"},{"selector":"http://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/js/*.js","action":"cancel"}]
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addElement
@@ -122,11 +122,19 @@
 
   (() => {
       const authorization = assertAllowedPage();
-      console.info('[SurvevGPT 0.1.2] Authorized page', authorization);
+      console.info('[SurvevGPT 0.1.3] Authorized page', authorization);
 
-      __vitePreload(() => Promise.resolve().then(() => init),false?__VITE_PRELOAD__:undefined).catch((error) => {
-          console.error('[SurvevGPT] Local research harness failed to initialize.', error);
-      });
+      const initialize = () => {
+          __vitePreload(() => Promise.resolve().then(() => init),false?__VITE_PRELOAD__:undefined).catch((error) => {
+              console.error('[SurvevGPT] Local research harness failed to initialize.', error);
+          });
+      };
+
+      if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initialize, { once: true });
+      } else {
+          initialize();
+      }
   })();
 
   let state = {
@@ -147,7 +155,7 @@
       get focusedEnemyStatus() {
           return this.isAimBotEnabled && this.focusedEnemy;
       },
-      isXrayEnabled: true,
+      isXrayEnabled: false,
       friends: [],
       lastFrames: {},
       enemyAimBot: null,
@@ -162,7 +170,7 @@
       isBumpFireEnabled: true,
       isObstacleOpacityEnabled: true,
       isSmokeOpacityEnabled: true,
-      isMapColorizingEnabled: true,
+      isMapColorizingEnabled: false,
       isMovementInterpolationEnabled: true,
       isMovementAccuracyEnabled: false,
       isPortraitCullingEnabled: false,
@@ -211,10 +219,13 @@
       });
   }
 
-  document.querySelector('#ui-game').append(overlay);
-  overlay.style.display = state.isOverlayEnabled ? 'block' : 'none';
-  document.querySelector('#ui-top-left').insertBefore(krityTitle, document.querySelector('#ui-top-left').firstChild);
-  document.querySelector('#ui-game').append(aimbotDot);
+  const uiGame = document.querySelector('#ui-game');
+  const uiTopLeft = document.querySelector('#ui-top-left');
+  if (uiGame) {
+      uiGame.append(overlay, aimbotDot);
+      overlay.style.display = state.isOverlayEnabled ? 'block' : 'none';
+  }
+  if (uiTopLeft) uiTopLeft.insertBefore(krityTitle, uiTopLeft.firstChild);
 
   const MsgType = Object.freeze({ Input: 3, Spectate: 12, DropItem: 13 });
 
@@ -287,6 +298,13 @@
           return 'Input replay started at approximately 59 packets/second; press again to stop.';
       },
   };
+
+  unsafeWindow.addEventListener('beforeunload', () => {
+      for (const key of ['__SURVEVGPT_SPEC_SWEEP__', '__SURVEVGPT_INPUT_REPLAY__']) {
+          if (unsafeWindow[key]) clearInterval(unsafeWindow[key]);
+          unsafeWindow[key] = null;
+      }
+  }, { once: true });
 
   const featureGroups = [
       {
@@ -1507,16 +1525,18 @@
   };
 
   function getTeam(player) {
-      return Object.keys(game.playerBarn.teamInfo).find(team => game.playerBarn.teamInfo[team].playerIds.includes(player.__id));
+      const teamInfo = unsafeWindow.game?.playerBarn?.teamInfo;
+      if (!player || !teamInfo) return undefined;
+      return Object.keys(teamInfo).find(team => teamInfo[team]?.playerIds?.includes(player.__id));
   }
 
   function findWeap(player) {
-      const weapType = player.netData.activeWeapon;
-      return weapType && unsafeWindow.guns[weapType] ? unsafeWindow.guns[weapType] : null;
+      const weapType = player?.netData?.activeWeapon;
+      return weapType && unsafeWindow.guns?.[weapType] ? unsafeWindow.guns[weapType] : null;
   }
 
   function findBullet(weapon) {
-      return weapon ? unsafeWindow.bullets[weapon.bulletType] : null;
+      return weapon ? unsafeWindow.bullets?.[weapon.bulletType] ?? null : null;
   }
 
   function aimBot() {
@@ -1528,7 +1548,7 @@
           const players = game?.playerBarn?.playerPool?.pool;
           const me = game?.activePlayer;
 
-          if (!Array.isArray(players) || !me?.netData || !me?.pos) return;
+          if (!Array.isArray(players) || !me?.netData || !me?.pos || !game?.camera?.pointToScreen || !game?.input?.mousePos) return;
 
           const meTeam = getTeam(me);
 
@@ -1574,7 +1594,11 @@
 
               const predictedEnemyPos = calculatePredictedPosForShoot(enemy, me);
 
-              if (!predictedEnemyPos) return;
+              if (!predictedEnemyPos) {
+                  unsafeWindow.lastAimPos = null;
+                  aimbotDot.style.display = 'none';
+                  return;
+              }
 
               unsafeWindow.lastAimPos = {
                   clientX: predictedEnemyPos.x,
@@ -1649,6 +1673,9 @@
       }
 
       const deltaTime = (dateNow - state.lastFrames[enemy.__id][0][0]) / 1000; // Time since last frame in seconds
+      if (!Number.isFinite(deltaTime) || deltaTime <= 0) {
+          return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+      }
 
       const enemyVelocity = {
           x: (enemyPos._x - state.lastFrames[enemy.__id][0][1]._x) / deltaTime,
@@ -1681,6 +1708,9 @@
 
       if (Math.abs(a) < 1e-6) {
           console.log('Linear solution bullet speed is much greater than velocity');
+          if (Math.abs(b) < 1e-6) {
+              return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
+          }
           t = -c / b;
       } else {
           const discriminant = b ** 2 - 4 * a * c;
@@ -1698,7 +1728,7 @@
       }
 
 
-      if (t < 0) {
+      if (!Number.isFinite(t) || t < 0) {
           console.log("Negative time, shooting at current position");
           return unsafeWindow.game.camera.pointToScreen({x: enemyPos._x, y: enemyPos._y});
       }
@@ -1770,8 +1800,10 @@
           const mouseX = event.clientX;
           const mouseY = event.clientY;
 
-          const players = unsafeWindow.game.playerBarn.playerPool.pool;
-          const me = unsafeWindow.game.activePlayer;
+          const game = unsafeWindow.game;
+          const players = game?.playerBarn?.playerPool?.pool;
+          const me = game?.activePlayer;
+          if (!Array.isArray(players) || !me) return;
           const meTeam = getTeam(me);
 
           let enemy = null;
@@ -1779,9 +1811,10 @@
 
           players.forEach((player) => {
               // We miss inactive or dead players
-              if (!player.active || player.netData.dead || player.downed || me.__id === player.__id || getTeam(player) == meTeam) return;
+              if (!player?.active || !player.netData || player.netData.dead || player.downed || !player.pos || me.__id === player.__id || getTeam(player) == meTeam) return;
 
-              const screenPlayerPos = unsafeWindow.game.camera.pointToScreen({x: player.pos._x, y: player.pos._y});
+              const screenPlayerPos = game.camera?.pointToScreen?.({x: player.pos._x, y: player.pos._y});
+              if (!screenPlayerPos) return;
               const distanceToEnemyFromMouse = (screenPlayerPos.x - mouseX) ** 2 + (screenPlayerPos.y - mouseY) ** 2;
 
               if (distanceToEnemyFromMouse < minDistanceToEnemyFromMouse) {
@@ -1791,57 +1824,21 @@
           });
 
           if (enemy) {
-              const enemyIndex = state.friends.indexOf(enemy.nameText._text);
+              const enemyName = enemy.nameText?._text;
+              if (!enemyName) return;
+              const enemyIndex = state.friends.indexOf(enemyName);
               if (~enemyIndex) {
                   state.friends.splice(enemyIndex, 1);
-                  console.log(`Removed player with name ${enemy.nameText._text} from friends.`);
+                  console.log(`Removed player with name ${enemyName} from friends.`);
               }else {
-                  state.friends.push(enemy.nameText._text);
-                  console.log(`Added player with name ${enemy.nameText._text} to friends.`);
+                  state.friends.push(enemyName);
+                  console.log(`Added player with name ${enemyName} to friends.`);
               }
           }
       });
   }
 
   keybinds();
-
-  function removeCeilings(){
-      Object.defineProperty( Object.prototype, 'textureCacheIds', {
-          set( value ) {
-              this._textureCacheIds = value;
-      
-              if ( Array.isArray( value ) ) {
-                  const scope = this;
-      
-                  value.push = new Proxy( value.push, {
-                      apply( target, thisArgs, args ) {
-                          // console.log(args[0], scope, scope?.baseTexture?.cacheId);
-                          // console.log(scope, args[0]);
-                          if (args[0].includes('ceiling') && !args[0].includes('map-building-container-ceiling-05') || args[0].includes('map-snow-')) {
-                              Object.defineProperty( scope, 'valid', {
-                                  set( value ) {
-                                      this._valid = value;
-                                  },
-                                  get() {
-                                      return state.isXrayEnabled ? false : this._valid;
-                                  }
-                              });
-                          }
-                          return Reflect.apply( ...arguments );
-      
-                      }
-                  });
-      
-              }
-      
-          },
-          get() {
-              return this._textureCacheIds;
-          }
-      });
-  }
-
-  removeCeilings();
 
   function autoLoot(){
       const installMobileLootMode = (data) => {
@@ -1853,8 +1850,7 @@
           });
 
           for (const property of ['isMobile', 'useTouch']) {
-              const nativeValue = data[property];
-              let currentValue = nativeValue;
+              let currentValue = data[property];
               Object.defineProperty(data, property, {
                   configurable: true,
                   get() {
@@ -1928,10 +1924,16 @@
   let portraitLastFlip = 0;
   let portraitValue = false;
   unsafeWindow.initGameControls = function(gameControls){
+      if (!gameControls) return gameControls;
+
       for (const command of inputs){
-          gameControls.addInput(inputCommands[command]);
+          const input = inputCommands[command];
+          if (input != null) gameControls.addInput?.(input);
       }
       inputs = [];
+
+      const game = unsafeWindow.game;
+      const firing = Boolean(game?.touch?.shotDetected || game?.inputBinds?.isBindDown?.(inputCommands.Fire));
 
       if (state.isMovementAccuracyEnabled && (gameControls.shootStart || gameControls.shootHold)) {
           gameControls.moveLeft = false;
@@ -1951,7 +1953,7 @@
       }
 
       // mobile aimbot
-      if (gameControls.touchMoveActive && unsafeWindow.lastAimPos){
+      if (gameControls.touchMoveActive && unsafeWindow.lastAimPos && gameControls.toMouseDir){
           // gameControls.toMouseDir
           gameControls.toMouseLen = 18;
 
@@ -1960,18 +1962,15 @@
               unsafeWindow.lastAimPos.clientY - unsafeWindow.innerHeight / 2,
           ) - Math.PI / 2;
 
-          if ( (  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && unsafeWindow.lastAimPos && unsafeWindow.game.activePlayer.localData.curWeapIdx != 3) {
+          if (firing && game?.activePlayer?.localData?.curWeapIdx !== 3) {
               gameControls.toMouseDir.x = Math.cos(atan);
-
-          }
-          if ( (  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && unsafeWindow.lastAimPos && unsafeWindow.game.activePlayer.localData.curWeapIdx != 3) {
               gameControls.toMouseDir.y = Math.sin(atan);
           }
       }
 
       // autoMelee
-      if ((  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && unsafeWindow.aimTouchMoveDir) {
-          if (unsafeWindow.aimTouchDistanceToEnemy < 4) gameControls.addInput(inputCommands['EquipMelee']);
+      if (firing && unsafeWindow.aimTouchMoveDir && gameControls.touchMoveDir) {
+          if (unsafeWindow.aimTouchDistanceToEnemy < 4) gameControls.addInput?.(inputCommands.EquipMelee);
           gameControls.touchMoveActive = true;
           gameControls.touchMoveLen = 255;
           gameControls.touchMoveDir.x = unsafeWindow.aimTouchMoveDir.x;
@@ -1982,16 +1981,22 @@
   };
 
   function bumpFire(){
-      unsafeWindow.game.inputBinds.isBindPressed = new Proxy( unsafeWindow.game.inputBinds.isBindPressed, {
+      const inputBinds = unsafeWindow.game?.inputBinds;
+      const original = inputBinds?.isBindPressed;
+      if (typeof original !== 'function' || original.__survevGptBumpFire) return;
+
+      const wrapped = new Proxy(original, {
           apply( target, thisArgs, args ) {
               if (args[0] === inputCommands.Fire) {
                   return state.isBumpFireEnabled
-                      ? unsafeWindow.game.inputBinds.isBindDown(...args)
-                      : Reflect.apply(...arguments);
+                      ? Boolean(inputBinds.isBindDown?.(...args))
+                      : Reflect.apply(target, thisArgs, args);
               }
-              return Reflect.apply( ...arguments );
+              return Reflect.apply(target, thisArgs, args);
           }
       });
+      Object.defineProperty(wrapped, '__survevGptBumpFire', { value: true });
+      inputBinds.isBindPressed = wrapped;
   }
 
   let spinAngle = 0;
@@ -2079,96 +2084,148 @@
       });
   }
 
-  function smokeOpacity(){
-      console.log('smokeopacity');
-      
-      const particles = unsafeWindow.game.smokeBarn.particles;
-      console.log('smokeopacity', particles, unsafeWindow.game.smokeBarn.particles);
-      particles.push = new Proxy( particles.push, {
-          apply( target, thisArgs, args ) {
-              console.log('smokeopacity', args[0]);
-              const particle = args[0];
+  function smokeOpacity() {
+      const particles = unsafeWindow.game?.smokeBarn?.particles;
+      if (!Array.isArray(particles)) return;
 
-              Object.defineProperty(particle.sprite, 'alpha', {
-                  get() {
-                      return state.isSmokeOpacityEnabled ? 0.12 : this._survevGptAlpha ?? 1;
-                  },
-                  set(value) {
-                      this._survevGptAlpha = value;
-                  }
-              });
+      const adaptParticle = (particle) => {
+          const sprite = particle?.sprite;
+          if (!sprite || sprite.__survevGptSmokeOpacity) return;
 
-              return Reflect.apply( ...arguments );
-
-          }
-      });
-
-      particles.forEach(particle => {
-          Object.defineProperty(particle.sprite, 'alpha', {
+          let nativeAlpha = sprite.alpha;
+          Object.defineProperty(sprite, '__survevGptSmokeOpacity', { configurable: true, value: true });
+          Object.defineProperty(sprite, 'alpha', {
+              configurable: true,
               get() {
-                  return state.isSmokeOpacityEnabled ? 0.12 : this._survevGptAlpha ?? 1;
+                  return state.isSmokeOpacityEnabled ? 0.12 : nativeAlpha;
               },
               set(value) {
-                  this._survevGptAlpha = value;
-              }
+                  nativeAlpha = value;
+              },
           });
-      });
+      };
+
+      if (!particles.push.__survevGptSmokeOpacity) {
+          const wrappedPush = new Proxy(particles.push, {
+              apply(target, thisArgs, args) {
+                  args.forEach(adaptParticle);
+                  return Reflect.apply(target, thisArgs, args);
+              },
+          });
+          Object.defineProperty(wrappedPush, '__survevGptSmokeOpacity', { value: true });
+          particles.push = wrappedPush;
+      }
+
+      particles.forEach(adaptParticle);
   }
 
-  function visibleNames(){
-      const pool = unsafeWindow.game.playerBarn.playerPool.pool;
+  function visibleNames() {
+      const pool = unsafeWindow.game?.playerBarn?.playerPool?.pool;
+      if (!Array.isArray(pool)) return;
 
-      console.log('visibleNames', pool);
+      const adaptPlayerName = (player) => {
+          const nameText = player?.nameText;
+          if (!nameText || nameText.__survevGptVisibleNames) return;
 
-      pool.push = new Proxy( pool.push, {
-          apply( target, thisArgs, args ) {
-              const player = args[0];
-              Object.defineProperty(player.nameText, 'visible', {
-                  get(){
-                      if (!state.isVisibleNamesEnabled) return this._survevGptVisible ?? false;
-                      const me = unsafeWindow.game.activePlayer;
-                      const meTeam = getTeam(me);
-                      const playerTeam = getTeam(player);
-                      // console.log('visible', player?.nameText?._text, playerTeam === meTeam ? BLUE : RED, player, me, playerTeam, meTeam)
-                      this.tint = playerTeam === meTeam ? BLUE : state.friends.includes(player.nameText._text) ? GREEN : RED;
-                      player.nameText.style.fontSize = 40;
-                      return true;
-                  },
-                  set(value){
-                      this._survevGptVisible = value;
-                  }
-              });
-
-              return Reflect.apply( ...arguments );
-          }
-      });
-
-      pool.forEach(player => {
-          Object.defineProperty(player.nameText, 'visible', {
-              get(){
-                  if (!state.isVisibleNamesEnabled) return this._survevGptVisible ?? false;
-                  const me = unsafeWindow.game.activePlayer;
-                  const meTeam = getTeam(me);
+          let nativeVisible = nameText.visible;
+          Object.defineProperty(nameText, '__survevGptVisibleNames', { configurable: true, value: true });
+          Object.defineProperty(nameText, 'visible', {
+              configurable: true,
+              get() {
+                  if (!state.isVisibleNamesEnabled) return nativeVisible;
+                  const meTeam = getTeam(unsafeWindow.game?.activePlayer);
                   const playerTeam = getTeam(player);
-                  // console.log('visible', player?.nameText?._text, playerTeam === meTeam ? BLUE : RED, player, me, playerTeam, meTeam)
-                  this.tint = playerTeam === meTeam ? BLUE : RED;
-                  player.nameText.style.fontSize = 40;
+                  this.tint = playerTeam === meTeam ? BLUE : state.friends.includes(this._text) ? GREEN : RED;
+                  if (this.style) this.style.fontSize = 40;
                   return true;
               },
-              set(value){
-                  this._survevGptVisible = value;
-              }
+              set(value) {
+                  nativeVisible = value;
+              },
           });
+      };
+
+      if (!pool.push.__survevGptVisibleNames) {
+          const wrappedPush = new Proxy(pool.push, {
+              apply(target, thisArgs, args) {
+                  args.forEach(adaptPlayerName);
+                  return Reflect.apply(target, thisArgs, args);
+              },
+          });
+          Object.defineProperty(wrappedPush, '__survevGptVisibleNames', { value: true });
+          pool.push = wrappedPush;
+      }
+
+      pool.forEach(adaptPlayerName);
+  }
+
+  function removeCeilings() {
+      const texturePrototype = unsafeWindow.PIXI?.Texture?.prototype;
+      if (!texturePrototype || texturePrototype.__survevGptCeilingFilter) return;
+
+      Object.defineProperty(texturePrototype, '__survevGptCeilingFilter', {
+          configurable: true,
+          value: true,
+      });
+
+      Object.defineProperty(texturePrototype, 'textureCacheIds', {
+          configurable: true,
+          get() {
+              return this.__survevGptTextureCacheIds;
+          },
+          set(value) {
+              this.__survevGptTextureCacheIds = value;
+              if (!Array.isArray(value) || value.__survevGptCeilingFilter) return;
+
+              const texture = this;
+              const wrappedPush = new Proxy(value.push, {
+                  apply(target, thisArgs, args) {
+                      for (const cacheId of args) {
+                          if (typeof cacheId !== 'string') continue;
+                          const isCeiling = cacheId.includes('ceiling')
+                              && !cacheId.includes('map-building-container-ceiling-05');
+                          if (!isCeiling && !cacheId.includes('map-snow-')) continue;
+                          installVisibilityOverride(texture);
+                      }
+                      return Reflect.apply(target, thisArgs, args);
+                  },
+              });
+              Object.defineProperty(value, '__survevGptCeilingFilter', { value: true });
+              value.push = wrappedPush;
+          },
       });
   }
 
+  function installVisibilityOverride(texture) {
+      if (texture.__survevGptVisibilityOverride) return;
+
+      let nativeValid = texture.valid;
+      Object.defineProperty(texture, '__survevGptVisibilityOverride', {
+          configurable: true,
+          value: true,
+      });
+      Object.defineProperty(texture, 'valid', {
+          configurable: true,
+          get() {
+              return state.isXrayEnabled ? false : nativeValid;
+          },
+          set(value) {
+              nativeValid = value;
+          },
+      });
+  }
+
+  let lastEspError = '';
+
   function esp(){
-      const pixi = unsafeWindow.game.pixi; 
-      const me = unsafeWindow.game.activePlayer;
-      const players = unsafeWindow.game.playerBarn.playerPool.pool;
+      const game = unsafeWindow.game;
+      const pixi = game?.pixi;
+      const me = game?.activePlayer;
+      const players = game?.playerBarn?.playerPool?.pool;
+      const Graphics = unsafeWindow.PIXI?.Graphics;
 
       // We check if there is an object of Pixi, otherwise we create a new
-      if (!pixi || me?.container == undefined) {
+      if (!pixi || !me?.container || !me?.pos || !Array.isArray(players) || !Graphics) {
           // console.error("PIXI object not found in game.");
           return;
       }
@@ -2187,7 +2244,7 @@
       if (state.isLineDrawerEnabled){
 
           if (!me.container.lineDrawer) {
-              me.container.lineDrawer = new PIXI.Graphics();
+              me.container.lineDrawer = new Graphics();
               me.container.addChild(me.container.lineDrawer);
               lineDrawer = me.container.lineDrawer;
           }
@@ -2195,7 +2252,7 @@
           // For each player
           players.forEach((player) => {
               // We miss inactive or dead players
-              if (!player.active || player.netData.dead || me.__id == player.__id) return;
+              if (!player?.active || !player.netData || player.netData.dead || !player.pos || me.__id == player.__id) return;
       
               const playerX = player.pos.x;
               const playerY = player.pos.y;
@@ -2203,7 +2260,7 @@
               const playerTeam = getTeam(player);
       
               // We calculate the color of the line (for example, red for enemies)
-              const lineColor = playerTeam === meTeam ? BLUE : state.friends.includes(player.nameText._text) ? GREEN : me.layer === player.layer && (state.isAimAtKnockedOutEnabled || !player.downed) ? RED : WHITE;
+              const lineColor = playerTeam === meTeam ? BLUE : state.friends.includes(player.nameText?._text) ? GREEN : me.layer === player.layer && (state.isAimAtKnockedOutEnabled || !player.downed) ? RED : WHITE;
       
               // We draw a line from the current player to another player
               lineDrawer.lineStyle(2, lineColor, 1);
@@ -2221,20 +2278,25 @@
       catch{if(!unsafeWindow.game?.ws || unsafeWindow.game?.activePlayer?.netData?.dead) return;}
       if (state.isNadeDrawerEnabled){
           if (!me.container.nadeDrawer) {
-              me.container.nadeDrawer = new PIXI.Graphics();
+              me.container.nadeDrawer = new Graphics();
               me.container.addChild(me.container.nadeDrawer);
               nadeDrawer = me.container.nadeDrawer;
           }
       
-          Object.values(unsafeWindow.game.objectCreator.idToObj)
+          Object.values(game.objectCreator?.idToObj ?? {})
               .filter(obj => {
                   const isValid = ( obj.__type === 9 && obj.type !== "smoke" )
                       ||  (
                               obj.smokeEmitter &&
-                              unsafeWindow.objects[obj.type].explosion);
+                              unsafeWindow.objects?.[obj.type]?.explosion);
                   return isValid;
               })
               .forEach(obj => {
+                  const explosionType = unsafeWindow.throwable?.[obj.type]?.explosionType
+                      || unsafeWindow.objects?.[obj.type]?.explosion;
+                  const radius = unsafeWindow.explosions?.[explosionType]?.rad?.max;
+                  if (!Number.isFinite(radius)) return;
+
                   if(obj.layer !== me.layer) {
                       nadeDrawer.beginFill(0xffffff, 0.3);
                   } else {
@@ -2243,12 +2305,7 @@
                   nadeDrawer.drawCircle(
                       (obj.pos.x - meX) * 16,
                       (meY - obj.pos.y) * 16,
-                      (unsafeWindow.explosions[
-                          unsafeWindow.throwable[obj.type]?.explosionType ||
-                          unsafeWindow.objects[obj.type].explosion
-                              ].rad.max +
-                          1) *
-                      16
+                      (radius + 1) * 16
                   );
                   nadeDrawer.endFill();
               });
@@ -2263,7 +2320,7 @@
           const curBullet = findBullet(curWeapon);
           
           if ( !me.container.laserDrawer ) {
-              me.container.laserDrawer = new PIXI.Graphics();
+              me.container.laserDrawer = new Graphics();
               me.container.addChildAt(me.container.laserDrawer, 0);
               laserDrawer = me.container.laserDrawer;
           }
@@ -2276,6 +2333,7 @@
               opacity = 0.3,
           ) {
               const { pos: acPlayerPos, posOld: acPlayerPosOld } = acPlayer;
+              if (!acPlayerPos) return;
       
               const dateNow = performance.now();
       
@@ -2303,14 +2361,15 @@
                   lasic.active = true;
                   lasic.range = curBullet.distance * 16.25;
                   let atan;
-                  if (acPlayer == me && ( !(unsafeWindow.lastAimPos) || (unsafeWindow.lastAimPos) && !(unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire)) ) ){
+                  const firing = Boolean(game.touch?.shotDetected || game.inputBinds?.isBindDown?.(inputCommands.Fire));
+                  if (acPlayer == me && (!unsafeWindow.lastAimPos || !firing)){
                       //local rotation
                       atan = Math.atan2(
-                          unsafeWindow.game.input.mousePos._y - unsafeWindow.innerHeight / 2,
-                          unsafeWindow.game.input.mousePos._x - unsafeWindow.innerWidth / 2,
+                          game.input?.mousePos?._y - unsafeWindow.innerHeight / 2,
+                          game.input?.mousePos?._x - unsafeWindow.innerWidth / 2,
                       );
-                  }else if(acPlayer == me && (unsafeWindow.lastAimPos) && ( unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) ){
-                      const playerPointToScreen = unsafeWindow.game.camera.pointToScreen({x: acPlayer.pos._x, y: acPlayer.pos._y});
+                  }else if(acPlayer == me && unsafeWindow.lastAimPos && firing){
+                      const playerPointToScreen = game.camera.pointToScreen({x: acPlayer.pos._x, y: acPlayer.pos._y});
                       atan = Math.atan2(
                           playerPointToScreen.y - unsafeWindow.lastAimPos.clientY,
                           playerPointToScreen.x - unsafeWindow.lastAimPos.clientX
@@ -2373,7 +2432,7 @@
           );
           
           players
-              .filter(player => player.active && !player.netData.dead && me.__id !== player.__id && me.layer === player.layer && getTeam(player) != meTeam)
+              .filter(player => player?.active && player.netData && !player.netData.dead && player.pos && me.__id !== player.__id && me.layer === player.layer && getTeam(player) != meTeam)
               .forEach(enemy => {
                   const enemyWeapon = findWeap(enemy);
                   laserPointer(
@@ -2387,7 +2446,11 @@
       };
 
       }catch(err){
-          // console.error('esp', err);
+          const message = String(err?.stack || err);
+          if (message !== lastEspError) {
+              lastEspError = message;
+              console.warn('[SurvevGPT] ESP frame skipped:', err);
+          }
       }
   }
 
@@ -2412,20 +2475,24 @@
       },
   ];
   function autoSwitch(){
-      if (!(unsafeWindow.game?.ws && unsafeWindow.game?.activePlayer?.localData?.curWeapIdx != null)) return; 
+      const game = unsafeWindow.game;
+      const localData = game?.activePlayer?.localData;
+      if (!(game?.ws && localData?.curWeapIdx != null)) return;
 
       if (!state.isAutoSwitchEnabled) return;
 
       try {
-      const curWeapIdx = unsafeWindow.game.activePlayer.localData.curWeapIdx;
-      const weaps = unsafeWindow.game.activePlayer.localData.weapons;
+      const curWeapIdx = localData.curWeapIdx;
+      const weaps = localData.weapons;
+      if (!Array.isArray(weaps) || !ammo[curWeapIdx]) return;
       const curWeap = weaps[curWeapIdx];
+      if (!curWeap) return;
       const shouldSwitch = gun => {
           let s = false;
           try {
               s =
-                  (unsafeWindow.guns[gun].fireMode === "single"
-                  || unsafeWindow.guns[gun].fireMode === "burst") 
+                  (unsafeWindow.guns?.[gun]?.fireMode === "single"
+                  || unsafeWindow.guns?.[gun]?.fireMode === "burst")
                   && unsafeWindow.guns[gun].fireDelay >= 0.45;
           }
           catch (e) {
@@ -2436,11 +2503,12 @@
       if(curWeap.ammo !== ammo[curWeapIdx].ammo) {
           const otherWeapIdx = (curWeapIdx == 0) ? 1 : 0;
           const otherWeap = weaps[otherWeapIdx];
-          if ((curWeap.ammo < ammo[curWeapIdx].ammo || (ammo[curWeapIdx].ammo === 0 && curWeap.ammo > ammo[curWeapIdx].ammo && (  unsafeWindow.game.touch.shotDetected ||  unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ))) && shouldSwitch(curWeap.type) && curWeap.type == ammo[curWeapIdx].type) {
+          const firing = Boolean(game.touch?.shotDetected || game.inputBinds?.isBindDown?.(inputCommands.Fire));
+          if ((curWeap.ammo < ammo[curWeapIdx].ammo || (ammo[curWeapIdx].ammo === 0 && curWeap.ammo > ammo[curWeapIdx].ammo && firing)) && shouldSwitch(curWeap.type) && curWeap.type == ammo[curWeapIdx].type) {
               ammo[curWeapIdx].lastShotDate = Date.now();
               console.log("Switching weapon due to ammo change");
-              if ( shouldSwitch(otherWeap.type) && otherWeap.ammo && !state.isUseOneGunEnabled) { inputs.push(weapsEquip[otherWeapIdx]); } // && ammo[curWeapIdx].ammo !== 0
-              else if ( otherWeap.type !== "" ) { inputs.push(weapsEquip[otherWeapIdx]); inputs.push(weapsEquip[curWeapIdx]); }
+              if ( otherWeap && shouldSwitch(otherWeap.type) && otherWeap.ammo && !state.isUseOneGunEnabled) { inputs.push(weapsEquip[otherWeapIdx]); } // && ammo[curWeapIdx].ammo !== 0
+              else if ( otherWeap?.type ) { inputs.push(weapsEquip[otherWeapIdx]); inputs.push(weapsEquip[curWeapIdx]); }
               else { inputs.push('EquipMelee'); inputs.push(weapsEquip[curWeapIdx]); }
           }
           ammo[curWeapIdx].ammo = curWeap.ammo;
@@ -2452,7 +2520,11 @@
   }
 
   function obstacleOpacity(){
-      unsafeWindow.game.map.obstaclePool.pool.forEach(obstacle => {
+      const obstacles = unsafeWindow.game?.map?.obstaclePool?.pool;
+      if (!Array.isArray(obstacles)) return;
+
+      obstacles.forEach(obstacle => {
+          if (!obstacle?.sprite || typeof obstacle.type !== 'string') return;
           if (!['bush', 'tree', 'table', 'stairs'].some(substring => obstacle.type.includes(substring))) return;
           obstacle.sprite.alpha = state.isObstacleOpacityEnabled ? 0.45 : 1;
       });
@@ -2461,6 +2533,7 @@
   let lastTime = Date.now();
   let showing = false;
   let timer = null;
+  let timerGame = null;
   function grenadeTimer(){
       if (!state.isGrenadeTimerEnabled) {
           showing = false;
@@ -2468,14 +2541,21 @@
           timer = null;
           return;
       }
-      if (!(unsafeWindow.game?.ws && unsafeWindow.game?.activePlayer?.localData?.curWeapIdx != null && unsafeWindow.game?.activePlayer?.netData?.activeWeapon != null)) return; 
+      const game = unsafeWindow.game;
+      if (timerGame && timerGame !== game) {
+          timer?.destroy?.();
+          timer = null;
+          showing = false;
+      }
+      timerGame = game;
+      if (!(game?.ws && game?.activePlayer?.localData?.curWeapIdx != null && game?.activePlayer?.netData?.activeWeapon != null)) return;
 
       try{
       let elapsed = (Date.now() - lastTime) / 1000;
-      const player = unsafeWindow.game.activePlayer;
+      const player = game.activePlayer;
       const activeItem = player.netData.activeWeapon;
 
-      if (3 !== unsafeWindow.game.activePlayer.localData.curWeapIdx 
+      if (3 !== player.localData.curWeapIdx
           || player.throwableState !== "cook"
           || (!activeItem.includes('frag') && !activeItem.includes('mirv') && !activeItem.includes('martyr_nade'))
       )
@@ -2493,30 +2573,41 @@
           if(timer) {
               timer.destroy();
           }
+          if (typeof unsafeWindow.pieTimerClass !== 'function' || !game.pixi?.stage?.addChild) return;
           timer = new unsafeWindow.pieTimerClass();
-          unsafeWindow.game.pixi.stage.addChild(timer.container);
+          game.pixi.stage.addChild(timer.container);
           timer.start("Grenade", 0, time);
           showing = true;
           lastTime = Date.now();
           return;
       }
-      timer.update(elapsed - timer.elapsed, unsafeWindow.game.camera);
+      timer.update(elapsed - timer.elapsed, game.camera);
       }catch(err){
           console.error('grenadeTimer', err);
       }
   }
 
+  const initializedTickers = new WeakSet();
+
   function initTicker(){
-      unsafeWindow.game.pixi._ticker.add(esp);
-      unsafeWindow.game.pixi._ticker.add(aimBot);
-      unsafeWindow.game.pixi._ticker.add(autoSwitch);
-      unsafeWindow.game.pixi._ticker.add(obstacleOpacity);
-      unsafeWindow.game.pixi._ticker.add(grenadeTimer);
-      unsafeWindow.game.pixi._ticker.add(unsafeWindow.GameMod.startUpdateLoop.bind(unsafeWindow.GameMod));
+      const ticker = unsafeWindow.game?.pixi?._ticker;
+      if (!ticker?.add || initializedTickers.has(ticker)) return;
+
+      initializedTickers.add(ticker);
+      ticker.add(esp);
+      ticker.add(aimBot);
+      ticker.add(autoSwitch);
+      ticker.add(obstacleOpacity);
+      ticker.add(grenadeTimer);
+
+      if (unsafeWindow.GameMod?.startUpdateLoop) {
+          ticker.add(unsafeWindow.GameMod.startUpdateLoop.bind(unsafeWindow.GameMod));
+      }
   }
 
-  let tickerOneTime = false;
+  let initGeneration = 0;
   function initGame() {
+      const generation = ++initGeneration;
       console.log('init game...........');
 
       unsafeWindow.lastAimPos = null;
@@ -2527,15 +2618,17 @@
       state.lastFrames = {};
 
       const tasks = [
-          {isApplied: false, condition: () => unsafeWindow.game?.input?.mousePos && unsafeWindow.game?.touch?.aimMovement?.toAimDir, action: overrideMousePos},
-          {isApplied: false, condition: () => unsafeWindow.game?.input?.mouseButtonsOld, action: bumpFire},
+          {isApplied: false, condition: () => unsafeWindow.game?.input?.mousePos, action: overrideMousePos},
+          {isApplied: false, condition: () => typeof unsafeWindow.game?.inputBinds?.isBindPressed === 'function', action: bumpFire},
           {isApplied: false, condition: () => unsafeWindow.game?.activePlayer?.localData, action: betterZoom},
-          {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.smokeBarn?.particles?.push, action: smokeOpacity},
-          {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.playerBarn?.playerPool?.pool?.push, action: visibleNames},
-          {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker && unsafeWindow.game?.activePlayer?.container && unsafeWindow.game?.activePlayer?.pos, action: () => { if (!tickerOneTime) { tickerOneTime = true; initTicker(); } } },
+          {isApplied: false, condition: () => typeof unsafeWindow.game?.smokeBarn?.particles?.push === 'function', action: smokeOpacity},
+          {isApplied: false, condition: () => typeof unsafeWindow.game?.playerBarn?.playerPool?.pool?.push === 'function', action: visibleNames},
+          {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker, action: removeCeilings},
+          {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker && unsafeWindow.game?.activePlayer?.container && unsafeWindow.game?.activePlayer?.pos, action: initTicker},
       ];
 
       (function checkLocalData(){
+          if (generation !== initGeneration) return;
           if (!unsafeWindow?.game?.ws) {
               setTimeout(checkLocalData, 50);
               return;
@@ -2575,19 +2668,21 @@
 
   // init game every play start
   function bootLoader(){
+      let currentGame = unsafeWindow.game;
       Object.defineProperty(unsafeWindow, 'game', {
+          configurable: true,
           get () {
-              return this._game;
+              return currentGame;
           },
           set(value) {
-              this._game = value;
-              
+              if (value === currentGame) return;
+              currentGame = value;
               if (!value) return;
-              
               initGame();
-              
           }
       });
+
+      if (currentGame) initGame();
   }
 
   bootLoader();

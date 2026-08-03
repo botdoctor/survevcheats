@@ -4,12 +4,20 @@ import { autoSwitch } from './plugins/autoSwitch.js';
 import { obstacleOpacity } from './plugins/obstacleOpacity.js';
 import { grenadeTimer } from './plugins/grenadeTimer.js';
 
+const initializedTickers = new WeakSet();
 
 export function initTicker(){
-    unsafeWindow.game.pixi._ticker.add(esp);
-    unsafeWindow.game.pixi._ticker.add(aimBot);
-    unsafeWindow.game.pixi._ticker.add(autoSwitch);
-    unsafeWindow.game.pixi._ticker.add(obstacleOpacity);
-    unsafeWindow.game.pixi._ticker.add(grenadeTimer);
-    unsafeWindow.game.pixi._ticker.add(unsafeWindow.GameMod.startUpdateLoop.bind(unsafeWindow.GameMod));
+    const ticker = unsafeWindow.game?.pixi?._ticker;
+    if (!ticker?.add || initializedTickers.has(ticker)) return;
+
+    initializedTickers.add(ticker);
+    ticker.add(esp);
+    ticker.add(aimBot);
+    ticker.add(autoSwitch);
+    ticker.add(obstacleOpacity);
+    ticker.add(grenadeTimer);
+
+    if (unsafeWindow.GameMod?.startUpdateLoop) {
+        ticker.add(unsafeWindow.GameMod.startUpdateLoop.bind(unsafeWindow.GameMod));
+    }
 }
