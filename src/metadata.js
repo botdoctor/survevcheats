@@ -1,10 +1,10 @@
 import { ALLOWED_URLS } from './urlPolicy.js';
 
-const resourceRule = (bundleName) => JSON.stringify(
+const resourceRule = () => JSON.stringify(
     ALLOWED_URLS.flatMap((hostname) => {
         const hosts = hostname === 'localhost' ? [hostname] : [hostname, `*.${hostname}`];
         return hosts.flatMap((host) => ['http', 'https'].map((protocol) => ({
-            selector: `${protocol}://${host}/*${bundleName}-*.js`,
+            selector: `${protocol}://${host}/js/*.js`,
             action: 'cancel',
         })));
     }),
@@ -19,8 +19,7 @@ export const metadata = `// ==UserScript==
 // @license      GPL3
 // @match        *://*/*
 // @run-at       document-end
-// @webRequest   ${resourceRule('app')}
-// @webRequest   ${resourceRule('shared')}
+// @webRequest   ${resourceRule()}
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @grant        GM_setValue

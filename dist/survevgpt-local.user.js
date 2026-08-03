@@ -7,8 +7,7 @@
 // @license      GPL3
 // @match        *://*/*
 // @run-at       document-end
-// @webRequest   [{"selector":"http://localhost/*app-*.js","action":"cancel"},{"selector":"https://localhost/*app-*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*app-*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*app-*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/*app-*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/*app-*.js","action":"cancel"}]
-// @webRequest   [{"selector":"http://localhost/*shared-*.js","action":"cancel"},{"selector":"https://localhost/*shared-*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*shared-*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*shared-*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/*shared-*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/*shared-*.js","action":"cancel"}]
+// @webRequest   [{"selector":"http://localhost/js/*.js","action":"cancel"},{"selector":"https://localhost/js/*.js","action":"cancel"},{"selector":"http://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/js/*.js","action":"cancel"}]
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @grant        GM_setValue
@@ -1019,6 +1018,34 @@
       return source;
   }
 
+  function requestText(url) {
+      assertAllowedUrl(url, 'inspect game bundle');
+      const extractText = (response) => {
+          if (response.status && (response.status < 200 || response.status >= 300)) {
+              throw new Error(`HTTP ${response.status} while inspecting ${url}`);
+          }
+          return response.responseText;
+      };
+      if (typeof GM !== 'undefined' && typeof GM.xmlHttpRequest === 'function') {
+          return GM.xmlHttpRequest({ url }).then(extractText);
+      }
+      if (typeof GM_xmlhttpRequest === 'function') {
+          return new Promise((resolve, reject) => GM_xmlhttpRequest({
+              url,
+              onload: (response) => {
+                  try {
+                      resolve(extractText(response));
+                  } catch (error) {
+                      reject(error);
+                  }
+              },
+              onerror: reject,
+              ontimeout: reject,
+          }));
+      }
+      throw new Error('[SurvevGPT] This userscript manager does not provide GM_xmlhttpRequest.');
+  }
+
 
   (async () => {
       const links = [
@@ -1026,21 +1053,75 @@
           ...Array.from(document.querySelectorAll('script[type="module"][src]'))
       ];
 
-      const appLink = links.find(link => link.src?.includes('app-'));
-      const sharedLink = links.find(link => link.href?.includes('shared-'));
-      const vendorLink = links.find(link => link.href?.includes('vendor-'));
+      const candidateUrls = [...new Set(links
+          .map((link) => link.src || link.href)
+          .filter((url) => {
+              try {
+                  return new URL(url, location.href).pathname.endsWith('.js');
+              } catch {
+                  return false;
+              }
+          }))];
+      const results = await Promise.allSettled(candidateUrls.map(async (url) => {
+          const source = await requestText(url);
+          const imports = [...source.matchAll(/from\s*["']([^"']+)["']/g)].map((match) => match[1]);
+          return { url, source, imports };
+      }));
+      const assets = results
+          .filter((result) => result.status === 'fulfilled')
+          .map((result) => result.value);
+      const failures = results
+          .map((result, index) => ({ result, url: candidateUrls[index] }))
+          .filter(({ result }) => result.status === 'rejected')
+          .map(({ result, url }) => ({ url, error: String(result.reason) }));
 
+      if (failures.length) {
+          console.warn('[SurvevGPT] Some candidate bundles could not be inspected.', failures);
+      }
 
-      const originalAppURL = appLink.src;
-      const originalSharedURL = sharedLink.href;
-      const originalVendorURL = vendorLink.href;
+      const sharedAsset = assets.find((asset) => asset.source.includes('explosion_frag'));
+      const appAsset = assets.find((asset) =>
+          asset !== sharedAsset
+          && asset.imports.length >= 2
+          && (asset.source.includes('sendMessage') || asset.source.includes('WebSocket'))
+      ) ?? assets.filter((asset) => asset !== sharedAsset).sort((a, b) => b.source.length - a.source.length)[0];
+      const importedNames = new Set([
+          ...(appAsset?.imports ?? []),
+          ...(sharedAsset?.imports ?? []),
+      ].map((value) => value.split('/').pop()));
+      const vendorAsset = assets.find((asset) =>
+          asset !== appAsset
+          && asset !== sharedAsset
+          && importedNames.has(asset.url.split('/').pop())
+      );
+
+      if (!appAsset || !sharedAsset || !vendorAsset) {
+          console.error('[SurvevGPT] Unable to classify game bundles.', assets.map((asset) => ({
+              url: asset.url,
+              size: asset.source.length,
+              imports: asset.imports,
+              definitions: asset.source.includes('explosion_frag'),
+          })));
+          return;
+      }
+
+      const originalAppURL = appAsset.url;
+      const originalSharedURL = sharedAsset.url;
+      const originalVendorURL = vendorAsset.url;
+
+      const modifiedVendorURL = URL.createObjectURL(new Blob([vendorAsset.source], {
+          type: 'application/javascript',
+      }));
 
       let modifiedSharedURL = null;
       let modifiedAppURL = null;
       if (originalSharedURL) {
-          assertAllowedUrl(originalSharedURL, 'request shared game bundle');
-          const response = await GM.xmlHttpRequest({ url: originalSharedURL }).catch(e => console.error(e));
-          let scriptContent = await response.responseText;
+          let scriptContent = sharedAsset.source;
+          for (const specifier of sharedAsset.imports) {
+              if (specifier.split('/').pop() === originalVendorURL.split('/').pop()) {
+                  scriptContent = scriptContent.replaceAll(specifier, modifiedVendorURL);
+              }
+          }
           // console.log(scriptContent);
 
           const sharedScriptPatches = [
@@ -1079,22 +1160,18 @@
       }
 
       if (originalAppURL) {
-          assertAllowedUrl(originalAppURL, 'request application game bundle');
-          const response = await GM.xmlHttpRequest({ url: originalAppURL }).catch(e => console.error(e));
-          let scriptContent = await response.responseText;
+          let scriptContent = appAsset.source;
+          for (const specifier of appAsset.imports) {
+              const basename = specifier.split('/').pop();
+              if (basename === originalSharedURL.split('/').pop()) {
+                  scriptContent = scriptContent.replaceAll(specifier, modifiedSharedURL);
+              } else if (basename === originalVendorURL.split('/').pop()) {
+                  scriptContent = scriptContent.replaceAll(specifier, modifiedVendorURL);
+              }
+          }
           // console.log(scriptContent);
 
           const appScriptPatches = [
-              {
-                  name: 'Import shared.js',
-                  from: /"\.\/shared-[^"]+\.js";/,
-                  to: `"${modifiedSharedURL}";`
-              },
-              {
-                  name: 'Import vendor.js',
-                  from: /\.\/vendor-[a-zA-Z0-9]+\.js/,
-                  to: `${originalVendorURL}`
-              },
               {
                   name: 'servers',
                   from: /var\s+(\w+)\s*=\s*\[\s*({\s*region:\s*"([^"]+)",\s*zone:\s*"([^"]+)",\s*url:\s*"([^"]+)",\s*https:\s*(!0|!1)\s*}\s*(,\s*{\s*region:\s*"([^"]+)",\s*zone:\s*"([^"]+)",\s*url:\s*"([^"]+)",\s*https:\s*(!0|!1)\s*})*)\s*\];/,
@@ -1173,11 +1250,6 @@
 
           
       // }
-      }
-
-      if (!originalAppURL || !originalSharedURL || !originalVendorURL){
-          console.error('originalAppURL or originalSharedURL or originalVendorURL is not found', originalAppURL, originalSharedURL, originalVendorURL);
-          return;
       }
 
       // Создаем временный список для хранения обработчиков

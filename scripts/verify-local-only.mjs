@@ -50,9 +50,7 @@ const webRequestRules = [...renderedMetadata.matchAll(/^\/\/ @webRequest\s+(.+)$
     .flatMap((match) => JSON.parse(match[1]));
 const expectedSelectors = new Set(ALLOWED_URLS.flatMap((hostname) =>
     (hostname === 'localhost' ? [hostname] : [hostname, `*.${hostname}`]).flatMap((host) =>
-        ['app', 'shared'].flatMap((bundle) => ['http', 'https'].map((protocol) =>
-            `${protocol}://${host}/*${bundle}-*.js`
-        ))
+        ['http', 'https'].map((protocol) => `${protocol}://${host}/js/*.js`)
     )
 ));
 if (
