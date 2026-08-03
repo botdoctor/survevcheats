@@ -155,8 +155,6 @@ export function adaptGameRuntime(game) {
         exposeMPrefix(pool);
     }
 
-    adaptVector(game.input?.mousePos);
-
     if (game.pixi && !('_ticker' in game.pixi)) {
         Object.defineProperty(game.pixi, '_ticker', {
             configurable: true,

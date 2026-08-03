@@ -23,8 +23,8 @@ export function initGame() {
         {isApplied: false, condition: () => unsafeWindow.game?.input?.mousePos && unsafeWindow.game?.touch?.aimMovement?.toAimDir, action: overrideMousePos},
         {isApplied: false, condition: () => unsafeWindow.game?.input?.mouseButtonsOld, action: bumpFire},
         {isApplied: false, condition: () => unsafeWindow.game?.activePlayer?.localData, action: betterZoom},
-        {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.smokeBarn?.particles.push, action: smokeOpacity},
-        {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.playerBarn?.playerPool?.pool.push, action: visibleNames},
+        {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.smokeBarn?.particles?.push, action: smokeOpacity},
+        {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.playerBarn?.playerPool?.pool?.push, action: visibleNames},
         {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker && unsafeWindow.game?.activePlayer?.container && unsafeWindow.game?.activePlayer?.pos, action: () => { if (!tickerOneTime) { tickerOneTime = true; initTicker(); } } },
     ];
 
@@ -46,12 +46,17 @@ export function initGame() {
         tasks.forEach(task => console.log(task.action, task.isApplied))
         
         tasks.forEach(task => {
-            if (task.isApplied || !task.condition()) return;
-            task.action();
-            task.isApplied = true;
+            if (task.isApplied) return;
+            try {
+                if (!task.condition()) return;
+                task.action();
+                task.isApplied = true;
+            } catch (error) {
+                console.warn('SurvevGPT task is not ready yet:', task.action.name || 'anonymous', error);
+            }
         });
         
-        if (tasks.some(task => !task.isApplied)) setTimeout(checkLocalData, 5);
+        if (tasks.some(task => !task.isApplied)) setTimeout(checkLocalData, 50);
         else console.log('All functions applied, stopping loop.');
     })();
 

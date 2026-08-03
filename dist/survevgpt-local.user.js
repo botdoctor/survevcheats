@@ -606,8 +606,6 @@
           exposeMPrefix(pool);
       }
 
-      adaptVector(game.input?.mousePos);
-
       if (game.pixi && !('_ticker' in game.pixi)) {
           Object.defineProperty(game.pixi, '_ticker', {
               configurable: true,
@@ -1998,35 +1996,55 @@
   const radius = 100; // The radius of the circle
   const spinSpeed = 37.5; // Rotation speed (increase for faster speed)
   function overrideMousePos() {
-      Object.defineProperty(unsafeWindow.game.input.mousePos, 'x', {
+      const mousePos = unsafeWindow.game?.input?.mousePos;
+      if (!mousePos || mousePos.__survevGptOverridden) return;
+
+      let rawX = mousePos.x;
+      let rawY = mousePos.y;
+      Object.defineProperty(mousePos, '__survevGptOverridden', {
+          configurable: true,
+          value: true,
+      });
+
+      Object.defineProperty(mousePos, 'x', {
+          configurable: true,
           get() {
-              if ( (  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && unsafeWindow.lastAimPos && unsafeWindow.game.activePlayer.localData.curWeapIdx != 3) {
+              const game = unsafeWindow.game;
+              const curWeapIdx = game?.activePlayer?.localData?.curWeapIdx;
+              const firing = game?.touch?.shotDetected || game?.inputBinds?.isBindDown?.(inputCommands.Fire);
+              const emoteOpen = game?.inputBinds?.isBindPressed?.(inputCommands.EmoteMenu) || game?.inputBinds?.isBindDown?.(inputCommands.EmoteMenu);
+              if (firing && unsafeWindow.lastAimPos && curWeapIdx != null && curWeapIdx !== 3) {
                   return unsafeWindow.lastAimPos.clientX;
               }
-              if ( !(  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && !(unsafeWindow.game.inputBinds.isBindPressed(inputCommands.EmoteMenu) || unsafeWindow.game.inputBinds.isBindDown(inputCommands.EmoteMenu)) && unsafeWindow.game.activePlayer.localData.curWeapIdx != 3 && state.isSpinBotEnabled) {
+              if (!firing && !emoteOpen && curWeapIdx != null && curWeapIdx !== 3 && state.isSpinBotEnabled) {
                   // SpinBot
                   spinAngle += spinSpeed;
                   return Math.cos(degreesToRadians(spinAngle)) * radius + unsafeWindow.innerWidth / 2;
               }
-              return this._x;
+              return rawX;
           },
           set(value) {
-              this._x = value;
+              rawX = value;
           }
       });
 
-      Object.defineProperty(unsafeWindow.game.input.mousePos, 'y', {
+      Object.defineProperty(mousePos, 'y', {
+          configurable: true,
           get() {
-              if ( (  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && unsafeWindow.lastAimPos && unsafeWindow.game.activePlayer.localData.curWeapIdx != 3) {
+              const game = unsafeWindow.game;
+              const curWeapIdx = game?.activePlayer?.localData?.curWeapIdx;
+              const firing = game?.touch?.shotDetected || game?.inputBinds?.isBindDown?.(inputCommands.Fire);
+              const emoteOpen = game?.inputBinds?.isBindPressed?.(inputCommands.EmoteMenu) || game?.inputBinds?.isBindDown?.(inputCommands.EmoteMenu);
+              if (firing && unsafeWindow.lastAimPos && curWeapIdx != null && curWeapIdx !== 3) {
                   return unsafeWindow.lastAimPos.clientY;
               }
-              if ( !(  unsafeWindow.game.touch.shotDetected || unsafeWindow.game.inputBinds.isBindDown(inputCommands.Fire) ) && !(unsafeWindow.game.inputBinds.isBindPressed(inputCommands.EmoteMenu) || unsafeWindow.game.inputBinds.isBindDown(inputCommands.EmoteMenu)) && unsafeWindow.game.activePlayer.localData.curWeapIdx != 3 && state.isSpinBotEnabled) {
+              if (!firing && !emoteOpen && curWeapIdx != null && curWeapIdx !== 3 && state.isSpinBotEnabled) {
                   return Math.sin(degreesToRadians(spinAngle)) * radius + unsafeWindow.innerHeight / 2;
               }
-              return this._y;
+              return rawY;
           },
           set(value) {
-              this._y = value;
+              rawY = value;
           }
       });
 
@@ -2516,8 +2534,8 @@
           {isApplied: false, condition: () => unsafeWindow.game?.input?.mousePos && unsafeWindow.game?.touch?.aimMovement?.toAimDir, action: overrideMousePos},
           {isApplied: false, condition: () => unsafeWindow.game?.input?.mouseButtonsOld, action: bumpFire},
           {isApplied: false, condition: () => unsafeWindow.game?.activePlayer?.localData, action: betterZoom},
-          {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.smokeBarn?.particles.push, action: smokeOpacity},
-          {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.playerBarn?.playerPool?.pool.push, action: visibleNames},
+          {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.smokeBarn?.particles?.push, action: smokeOpacity},
+          {isApplied: false, condition: () => Array.prototype.push === unsafeWindow.game?.playerBarn?.playerPool?.pool?.push, action: visibleNames},
           {isApplied: false, condition: () => unsafeWindow.game?.pixi?._ticker && unsafeWindow.game?.activePlayer?.container && unsafeWindow.game?.activePlayer?.pos, action: () => { if (!tickerOneTime) { tickerOneTime = true; initTicker(); } } },
       ];
 
@@ -2539,12 +2557,17 @@
           tasks.forEach(task => console.log(task.action, task.isApplied));
           
           tasks.forEach(task => {
-              if (task.isApplied || !task.condition()) return;
-              task.action();
-              task.isApplied = true;
+              if (task.isApplied) return;
+              try {
+                  if (!task.condition()) return;
+                  task.action();
+                  task.isApplied = true;
+              } catch (error) {
+                  console.warn('SurvevGPT task is not ready yet:', task.action.name || 'anonymous', error);
+              }
           });
           
-          if (tasks.some(task => !task.isApplied)) setTimeout(checkLocalData, 5);
+          if (tasks.some(task => !task.isApplied)) setTimeout(checkLocalData, 50);
           else console.log('All functions applied, stopping loop.');
       })();
 
