@@ -30,6 +30,8 @@ Supported modules include predictive and priority-based aim, triggerbot, recoil-
 
 The aimbot profile selector provides Default, OP, and Custom behavior. OP enables full-range sticky acquisition and intercept prediction while firing; Custom uses the individual FOV, range, priority, prediction, and downed-target controls. Aim automation requires an equipped gun and remains inactive for fists, melee weapons, throwables, and consumables. Movement accuracy brackets each predicted shot with a narrow stationary-input window aligned to the authoritative 100 Hz server tick, then restores movement between rounds.
 
+Aimbot and triggerbot acquisition share a bullet-path reachability filter. Targets are rejected when they exceed the equipped bullet's range, occupy an incompatible layer, sit behind a solid bullet-height obstacle, or are occluded by another player. Predictive aim checks the predicted intercept path rather than only the target's current position.
+
 GeekMenu settings are persisted through Tampermonkey storage and mirrored to page storage as a fallback. This keeps the selected aimbot profile and other controls stable across reloads and across the allowlisted project domains.
 
 On `localhost` and `geekbar.xyz`, GeekMenu exposes a Trust Lab section. Its mobile-identity probe applies on the next match join and tests the server's client-reported mobile pickup behavior. Movement accuracy exercises the one-tick movement-spread boundary, while Culling sweep tests portrait-controlled visibility. Diagnostics show the active claims; destructive crash and denial-of-service probes are intentionally excluded.
@@ -42,4 +44,4 @@ The client defaults API, assets, matchmaking, and ping/WebSocket discovery to th
 
 ## Source revision and rollback
 
-The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `2c94a630`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
+The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `d33e93ea`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
