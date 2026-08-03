@@ -49,6 +49,8 @@ const expectedMatchRules = new Set([
     '*://localhost/*',
     '*://survev.io/*',
     '*://*.survev.io/*',
+    '*://geekbar.xyz/*',
+    '*://*.geekbar.xyz/*',
 ]);
 if (matchRules.length !== expectedMatchRules.size || matchRules.some((rule) => !expectedMatchRules.has(rule))) {
     throw new Error('Userscript metadata match rules must be limited to the runtime allowlist.');

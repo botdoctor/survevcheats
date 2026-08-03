@@ -24,6 +24,8 @@ export function renderNativeMetadata(version) {
 // @match        *://localhost/*
 // @match        *://survev.io/*
 // @match        *://*.survev.io/*
+// @match        *://geekbar.xyz/*
+// @match        *://*.geekbar.xyz/*
 // @run-at       document-start
 // @webRequest   ${JSON.stringify(resourceRules())}
 // @grant        unsafeWindow

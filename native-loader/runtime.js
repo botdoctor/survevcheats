@@ -4,7 +4,7 @@ export function nativeLoaderRuntime(pageWindow, payload, buildInfo) {
     'use strict';
 
     const STATUS_KEY = '__SURVEVGPT_NATIVE_STATUS__';
-    const allowedHosts = Object.freeze(['localhost', 'survev.io']);
+    const allowedHosts = Object.freeze(['localhost', 'survev.io', 'geekbar.xyz']);
     const hostname = pageWindow.location.hostname.toLowerCase().replace(/\.$/, '');
     const allowed = allowedHosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
     const status = pageWindow[STATUS_KEY] = {

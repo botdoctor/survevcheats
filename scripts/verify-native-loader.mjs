@@ -4,7 +4,13 @@ import { nativeLoaderRuntime } from '../native-loader/runtime.js';
 
 const metadata = renderNativeMetadata('0.0.0-test');
 const matches = [...metadata.matchAll(/^\/\/ @match\s+(.+)$/gm)].map((match) => match[1]);
-const expected = ['*://localhost/*', '*://survev.io/*', '*://*.survev.io/*'];
+const expected = [
+    '*://localhost/*',
+    '*://survev.io/*',
+    '*://*.survev.io/*',
+    '*://geekbar.xyz/*',
+    '*://*.geekbar.xyz/*',
+];
 if (matches.length !== expected.length || expected.some((value) => !matches.includes(value))) {
     throw new Error(`Unexpected native loader matches: ${matches.join(', ')}`);
 }

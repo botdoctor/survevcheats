@@ -22,6 +22,8 @@ export const metadata = `// ==UserScript==
 // @match        *://localhost/*
 // @match        *://survev.io/*
 // @match        *://*.survev.io/*
+// @match        *://geekbar.xyz/*
+// @match        *://*.geekbar.xyz/*
 // @run-at       document-start
 // @webRequest   ${resourceRule()}
 // @grant        GM_xmlhttpRequest
