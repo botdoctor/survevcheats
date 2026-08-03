@@ -29,7 +29,10 @@ export function initGame() {
     ];
 
     (function checkLocalData(){
-        if(!unsafeWindow?.game?.ws) return;
+        if (!unsafeWindow?.game?.ws) {
+            setTimeout(checkLocalData, 50);
+            return;
+        }
 
         console.log('Checking local data')
 
@@ -54,4 +57,3 @@ export function initGame() {
 
     updateOverlay();
 }
-

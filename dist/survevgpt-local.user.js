@@ -469,6 +469,12 @@
       }
   }
 
+  function adaptVector(vector) {
+      if (!vector || typeof vector !== 'object') return;
+      alias(vector, '_x', 'x');
+      alias(vector, '_y', 'y');
+  }
+
   function exposeMPrefix(target) {
       if (!target || (typeof target !== 'object' && typeof target !== 'function')) return target;
       if (adapted.has(target)) return target;
@@ -508,6 +514,8 @@
           inventory: 'buyn',
           weapons: 'qlyu',
       });
+      [player?.JXy, player?.ZtMf, player?.WlKQJ, player?.SFg, player?.GATSOq?.JXy, player?.GATSOq?.SFg]
+          .forEach(adaptVector);
       exposeMPrefix(player);
       exposeMPrefix(player?.m_netData);
       exposeMPrefix(player?.m_localData);
@@ -597,10 +605,12 @@
           exposeMPrefix(pool);
       }
 
-      if (game.m_pixi && !('_ticker' in game.m_pixi)) {
-          Object.defineProperty(game.m_pixi, '_ticker', {
+      adaptVector(game.input?.mousePos);
+
+      if (game.pixi && !('_ticker' in game.pixi)) {
+          Object.defineProperty(game.pixi, '_ticker', {
               configurable: true,
-              get: () => game.m_pixi.ticker,
+              get: () => game.pixi.ticker,
           });
       }
 
@@ -2482,7 +2492,10 @@
       ];
 
       (function checkLocalData(){
-          if(!unsafeWindow?.game?.ws) return;
+          if (!unsafeWindow?.game?.ws) {
+              setTimeout(checkLocalData, 50);
+              return;
+          }
 
           console.log('Checking local data');
 
