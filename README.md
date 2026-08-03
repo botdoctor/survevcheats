@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.8. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.9. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -40,7 +40,7 @@ This section tracks the controls in GeekMenu 0.3.8. When a menu option is added,
 | Profile | `Default` uses a 260-pixel FOV, 200-unit range, crosshair priority, and no prediction. `OP` uses a 1500-pixel FOV, 1000-unit range, sticky distance priority, and prediction. `Custom` uses the individual settings below. Default and OP only aim while firing. |
 | Aim while firing | In Custom profile, only acquire and track while primary fire is requested. |
 | Trigger mode | While left click is held, forwards fire only when Aimbot has a reachable target. It suppresses fire when no target qualifies and resumes when one does. This is a held-fire gate, unlike Triggerbot. |
-| Predictive aim | In Custom profile, estimates target velocity and bullet travel time and aims at the predicted intercept. OP always enables this behavior. |
+| Predictive aim | In Custom profile, tracks and smooths motion across network updates, compensates for snapshot age and measured latency, and solves an intercept using perk-adjusted bullet speed and range. Direction reversals reset the smoothing quickly. OP always enables this behavior. |
 | Aim at downed | Allows downed enemies in Custom profile. Default and OP ignore downed enemies. |
 | Triggerbot | Automatically aims and fires whenever an eligible target is acquired; left click is not required. |
 | Aim FOV | Custom-profile acquisition radius around the cursor, from 20 to 1500 screen pixels. |
@@ -127,4 +127,4 @@ The client defaults API, assets, matchmaking, and ping/WebSocket discovery to th
 
 ## Source revision and rollback
 
-The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `2fb6465f`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
+The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `e366dca2`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
