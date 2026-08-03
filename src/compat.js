@@ -13,6 +13,12 @@ function alias(target, publicName, internalName) {
     });
 }
 
+function aliasMap(target, aliases) {
+    for (const [publicName, internalName] of Object.entries(aliases)) {
+        alias(target, publicName, internalName);
+    }
+}
+
 function exposeMPrefix(target) {
     if (!target || (typeof target !== 'object' && typeof target !== 'function')) return target;
     if (adapted.has(target)) return target;
@@ -30,12 +36,72 @@ function exposeMPrefix(target) {
 }
 
 function adaptPlayer(player) {
+    aliasMap(player, {
+        netData: 'GATSOq',
+        localData: 'SujaN',
+        pos: 'JXy',
+        posOld: 'ZtMf',
+        dir: 'SFg',
+        visualPos: 'WlKQJ',
+    });
+    aliasMap(player?.GATSOq, {
+        pos: 'JXy',
+        dir: 'SFg',
+        activeWeapon: 'kgr',
+        dead: 'zTJbIl',
+        downed: 'xTH',
+        role: 'RyR',
+    });
+    aliasMap(player?.SujaN, {
+        health: 'IzYNkh',
+        curWeapIdx: 'VCiQ',
+        inventory: 'buyn',
+        weapons: 'qlyu',
+    });
     exposeMPrefix(player);
     exposeMPrefix(player?.m_netData);
     exposeMPrefix(player?.m_localData);
 }
 
 export function adaptGameRuntime(game) {
+    aliasMap(game, {
+        pixi: 'nHb',
+        audioManager: 'GHBZo',
+        localization: 'PZa',
+        config: 'RPY',
+        input: 'JiM',
+        inputBinds: 'KEC',
+        resourceManager: 'qZc',
+        ws: 'dYkZo',
+        camera: 'tGah',
+        map: 'TFlxX',
+        playerBarn: 'uhx',
+        smokeBarn: 'Hhdj',
+        objectCreator: 'kbsoh',
+        activePlayer: 'iGQ',
+        sendMessage: 'RIZTQZ',
+        prevInputMsg: 'KkQ',
+        spectating: 'fvVFy',
+        touch: 'sqB',
+        renderer: 'Pvi',
+        particleBarn: 'UDzww',
+        decalBarn: 'SfSEk',
+        bulletBarn: 'oCUEBh',
+        flareBarn: 'oiU',
+        projectileBarn: 'ifHtPn',
+        explosionBarn: 'cHefb',
+        planeBarn: 'adx',
+        airdropBarn: 'Ekq',
+        deadBodyBarn: 'yRvzxj',
+        lootBarn: 'yMJ',
+        gas: 'iwzlN',
+        uiManager: 'DqDK',
+        ui2Manager: 'wHSmLW',
+        emoteBarn: 'RSaBV',
+        shotBarn: 'ZjvKUb',
+        localId: 'jaIIK',
+        activeId: 'ClgHB',
+    });
     exposeMPrefix(game);
     [
         game.m_camera,
@@ -48,8 +114,38 @@ export function adaptGameRuntime(game) {
         game.m_objectCreator,
     ].forEach(exposeMPrefix);
 
-    exposeMPrefix(game.m_map?.m_obstaclePool);
-    exposeMPrefix(game.m_playerBarn?.playerPool);
+    alias(game.map, 'obstaclePool', 'PxU');
+    aliasMap(game.camera, {
+        pos: 'JXy',
+        zoom: 'sdArG',
+        targetZoom: 'dDg',
+        screenWidth: 'SUfX',
+        screenHeight: 'NBo',
+        pointToScreen: 'VbAOhd',
+        screenToPoint: 'UhnJi',
+    });
+    alias(game.smokeBarn, 'smokePool', 'atf');
+    if (game.smokeBarn && !('particles' in game.smokeBarn) && game.smokeBarn.atf) {
+        Object.defineProperty(game.smokeBarn, 'particles', {
+            configurable: true,
+            get: () => game.smokeBarn.atf.qQqu,
+        });
+    }
+    aliasMap(game.objectCreator, {
+        idToObj: 'UijNDd',
+        types: 'rbZrJ',
+    });
+
+    const pools = [
+        game.map?.obstaclePool,
+        game.playerBarn?.playerPool,
+        game.smokeBarn?.smokePool,
+    ];
+    for (const pool of pools) {
+        if (!pool) continue;
+        alias(pool, 'pool', 'qQqu');
+        exposeMPrefix(pool);
+    }
 
     if (game.m_pixi && !('_ticker' in game.m_pixi)) {
         Object.defineProperty(game.m_pixi, '_ticker', {
@@ -58,18 +154,17 @@ export function adaptGameRuntime(game) {
         });
     }
 
-    for (const player of game.m_playerBarn?.playerPool?.m_pool ?? []) adaptPlayer(player);
-    for (const obstacle of game.m_map?.m_obstaclePool?.m_pool ?? []) exposeMPrefix(obstacle);
-    for (const smoke of game.m_smokeBarn?.m_particles ?? []) exposeMPrefix(smoke);
+    for (const player of game.playerBarn?.playerPool?.pool ?? []) adaptPlayer(player);
+    for (const obstacle of game.map?.obstaclePool?.pool ?? []) exposeMPrefix(obstacle);
+    for (const smoke of game.smokeBarn?.smokePool?.pool ?? []) exposeMPrefix(smoke);
 }
 
 unsafeWindow.installSurvevGptCompat = (game) => {
     adaptGameRuntime(game);
     const timer = setInterval(() => {
-        if (!game.m_ws && !game.m_playerBarn) return;
+        if (!game.ws && !game.playerBarn) return;
         adaptGameRuntime(game);
     }, 250);
     unsafeWindow.addEventListener('beforeunload', () => clearInterval(timer), { once: true });
     return game;
 };
-

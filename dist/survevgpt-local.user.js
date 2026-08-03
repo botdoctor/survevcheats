@@ -463,6 +463,12 @@
       });
   }
 
+  function aliasMap(target, aliases) {
+      for (const [publicName, internalName] of Object.entries(aliases)) {
+          alias(target, publicName, internalName);
+      }
+  }
+
   function exposeMPrefix(target) {
       if (!target || (typeof target !== 'object' && typeof target !== 'function')) return target;
       if (adapted.has(target)) return target;
@@ -480,12 +486,72 @@
   }
 
   function adaptPlayer(player) {
+      aliasMap(player, {
+          netData: 'GATSOq',
+          localData: 'SujaN',
+          pos: 'JXy',
+          posOld: 'ZtMf',
+          dir: 'SFg',
+          visualPos: 'WlKQJ',
+      });
+      aliasMap(player?.GATSOq, {
+          pos: 'JXy',
+          dir: 'SFg',
+          activeWeapon: 'kgr',
+          dead: 'zTJbIl',
+          downed: 'xTH',
+          role: 'RyR',
+      });
+      aliasMap(player?.SujaN, {
+          health: 'IzYNkh',
+          curWeapIdx: 'VCiQ',
+          inventory: 'buyn',
+          weapons: 'qlyu',
+      });
       exposeMPrefix(player);
       exposeMPrefix(player?.m_netData);
       exposeMPrefix(player?.m_localData);
   }
 
   function adaptGameRuntime(game) {
+      aliasMap(game, {
+          pixi: 'nHb',
+          audioManager: 'GHBZo',
+          localization: 'PZa',
+          config: 'RPY',
+          input: 'JiM',
+          inputBinds: 'KEC',
+          resourceManager: 'qZc',
+          ws: 'dYkZo',
+          camera: 'tGah',
+          map: 'TFlxX',
+          playerBarn: 'uhx',
+          smokeBarn: 'Hhdj',
+          objectCreator: 'kbsoh',
+          activePlayer: 'iGQ',
+          sendMessage: 'RIZTQZ',
+          prevInputMsg: 'KkQ',
+          spectating: 'fvVFy',
+          touch: 'sqB',
+          renderer: 'Pvi',
+          particleBarn: 'UDzww',
+          decalBarn: 'SfSEk',
+          bulletBarn: 'oCUEBh',
+          flareBarn: 'oiU',
+          projectileBarn: 'ifHtPn',
+          explosionBarn: 'cHefb',
+          planeBarn: 'adx',
+          airdropBarn: 'Ekq',
+          deadBodyBarn: 'yRvzxj',
+          lootBarn: 'yMJ',
+          gas: 'iwzlN',
+          uiManager: 'DqDK',
+          ui2Manager: 'wHSmLW',
+          emoteBarn: 'RSaBV',
+          shotBarn: 'ZjvKUb',
+          localId: 'jaIIK',
+          activeId: 'ClgHB',
+      });
       exposeMPrefix(game);
       [
           game.m_camera,
@@ -498,8 +564,38 @@
           game.m_objectCreator,
       ].forEach(exposeMPrefix);
 
-      exposeMPrefix(game.m_map?.m_obstaclePool);
-      exposeMPrefix(game.m_playerBarn?.playerPool);
+      alias(game.map, 'obstaclePool', 'PxU');
+      aliasMap(game.camera, {
+          pos: 'JXy',
+          zoom: 'sdArG',
+          targetZoom: 'dDg',
+          screenWidth: 'SUfX',
+          screenHeight: 'NBo',
+          pointToScreen: 'VbAOhd',
+          screenToPoint: 'UhnJi',
+      });
+      alias(game.smokeBarn, 'smokePool', 'atf');
+      if (game.smokeBarn && !('particles' in game.smokeBarn) && game.smokeBarn.atf) {
+          Object.defineProperty(game.smokeBarn, 'particles', {
+              configurable: true,
+              get: () => game.smokeBarn.atf.qQqu,
+          });
+      }
+      aliasMap(game.objectCreator, {
+          idToObj: 'UijNDd',
+          types: 'rbZrJ',
+      });
+
+      const pools = [
+          game.map?.obstaclePool,
+          game.playerBarn?.playerPool,
+          game.smokeBarn?.smokePool,
+      ];
+      for (const pool of pools) {
+          if (!pool) continue;
+          alias(pool, 'pool', 'qQqu');
+          exposeMPrefix(pool);
+      }
 
       if (game.m_pixi && !('_ticker' in game.m_pixi)) {
           Object.defineProperty(game.m_pixi, '_ticker', {
@@ -508,15 +604,15 @@
           });
       }
 
-      for (const player of game.m_playerBarn?.playerPool?.m_pool ?? []) adaptPlayer(player);
-      for (const obstacle of game.m_map?.m_obstaclePool?.m_pool ?? []) exposeMPrefix(obstacle);
-      for (const smoke of game.m_smokeBarn?.m_particles ?? []) exposeMPrefix(smoke);
+      for (const player of game.playerBarn?.playerPool?.pool ?? []) adaptPlayer(player);
+      for (const obstacle of game.map?.obstaclePool?.pool ?? []) exposeMPrefix(obstacle);
+      for (const smoke of game.smokeBarn?.smokePool?.pool ?? []) exposeMPrefix(smoke);
   }
 
   unsafeWindow.installSurvevGptCompat = (game) => {
       adaptGameRuntime(game);
       const timer = setInterval(() => {
-          if (!game.m_ws && !game.m_playerBarn) return;
+          if (!game.ws && !game.playerBarn) return;
           adaptGameRuntime(game);
       }, 250);
       unsafeWindow.addEventListener('beforeunload', () => clearInterval(timer), { once: true });
@@ -1127,28 +1223,28 @@
           const sharedScriptPatches = [
               {
                   name: 'bullets',
-                  from: /function\s+(\w+)\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{\s*return\s+(\w+)\((\w+),\s*(\w+),\s*(\w+)\)\s*\}\s*const\s+(\w+)\s*=\s*\{\s*(\w+)\s*:\s*\{\s*type\s*:\s*"(.*?)"\s*,\s*damage\s*:\s*(\d+)\s*,/,
-                  to: `function $1($2, $3) {\n    return $4($5, $6, $7)\n}\nconst $8 = window.bullets = {\n    $9: {\n        type: "$10",\n        damage: $11,`
+                  from: /(\w+)=\{bullet_mp5:\{type:([`'"])bullet\2,damage:/,
+                  to: '$1=window.bullets={bullet_mp5:{type:$2bullet$2,damage:'
               },
               {
                   name: 'explosions',
-                  from: /(\w+)=\{explosion_frag:\{type:"explosion",damage:(\d+),obstacleDamage/,
-                  to: `$1 = window.explosions = {explosion_frag:{type:"explosion",damage:$2,obstacleDamage`
+                  from: /(\w+)=\{explosion_frag:\{type:([`'"])explosion\2,damage:/,
+                  to: '$1=window.explosions={explosion_frag:{type:$2explosion$2,damage:'
               },
               {
                   name: 'guns',
-                  from: /(\w+)=\{(\w+):\{name:"([^"]+)",type:"gun",quality:(\d+),fireMode:"([^"]+)",caseTiming:"([^"]+)",ammo:"([^"]+)",/,
-                  to: `$1 = window.guns = {$2:{name:"$3",type:"gun",quality:$4,fireMode:"$5",caseTiming:"$6",ammo:"$7",`
+                  from: /(\w+)=\{mp5:\{name:([`'"])MP5\2,type:([`'"])gun\3,/,
+                  to: '$1=window.guns={mp5:{name:$2MP5$2,type:$3gun$3,'
               },
               {
                   name: 'throwable',
-                  from: /(\w+)=\{(\w+):\{name:"([^"]+)",type:"throwable",quality:(\d+),explosionType:"([^"]+)",/,
-                  to: `$1 = window.throwable = {$2:{name:"$3",type:"throwable",quality:$4,explosionType:"$5",`
+                  from: /(\w+)=\{frag:\{name:([`'"])Frag Grenade\2,type:([`'"])throwable\3,/,
+                  to: '$1=window.throwable={frag:{name:$2Frag Grenade$2,type:$3throwable$3,'
               },
               {
                   name: 'objects',
-                  from: /\s*(\w+)\s*=\s*\{\s*(\w+)\s*:\s*Ve\(\{\}\)\s*,\s*(\w+)\s*:\s*Ve\(\{\s*img\s*:\s*\{\s*tint\s*:\s*(\d+)\s*\}\s*,\s*loot\s*:\s*\[\s*n\("(\w+)",\s*(\d+),\s*(\d+)\)\s*,\s*d\("(\w+)",\s*(\d+)\)\s*,\s*d\("(\w+)",\s*(\d+)\)\s*,\s*d\("(\w+)",\s*(\d+)\)\s*\]\s*\}\)\s*,/,
-                  to: ` $1 = window.objects = {\n    $2: Ve({}),\n    $3: Ve({\n        img: {\n            tint: $4\n        },\n        loot: [\n            n("$5", $6, $7),\n            d("$8", $9),\n            d("$10", $11),\n            d("$12", $13)\n        ]\n    }),`
+                  from: /(\w+)=new (\w+)\([`'"]Game[`'"],(\w+),10\),(\w+)=new \2\([`'"]Map[`'"],(\w+),12\)/,
+                  to: '$1=new $2(`Game`,$3,10),window.gameObjectDefs=$1._defs,$4=new $2(`Map`,$5,12),window.objects=$4._defs'
               }
           ];
 
@@ -1173,45 +1269,9 @@
 
           const appScriptPatches = [
               {
-                  name: 'servers',
-                  from: /var\s+(\w+)\s*=\s*\[\s*({\s*region:\s*"([^"]+)",\s*zone:\s*"([^"]+)",\s*url:\s*"([^"]+)",\s*https:\s*(!0|!1)\s*}\s*(,\s*{\s*region:\s*"([^"]+)",\s*zone:\s*"([^"]+)",\s*url:\s*"([^"]+)",\s*https:\s*(!0|!1)\s*})*)\s*\];/,
-                  to: `var $1 = window.servers = [$2];`
-              },
-              {
                   name: 'Map colorizing',
                   from: /(\w+)\.sort\(\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*=>\s*\2\.zIdx\s*-\s*\3\.zIdx\s*\);/,
                   to: `$1.sort(($2, $3) => $2.zIdx - $3.zIdx);\nwindow.mapColorizing($1);`
-              },
-              {
-                  name: 'Position without interpolation (pos._x, pos._y)',
-                  from: /this\.pos\s*=\s*(\w+)\.copy\((\w+)\.netData\.pos\)/,
-                  to: `this.pos = $1.copy($2.netData.pos),this.pos._x = this.netData.pos.x, this.pos._y = this.netData.pos.y`
-              },
-              {
-                  name: 'Movement interpolation (Game optimization)',
-                  from: 'this.pos._y = this.netData.pos.y',
-                  to: `this.pos._y = this.netData.pos.y,(window.movementInterpolation) &&
-                                                        !(
-                                                            Math.abs(this.pos.x - this.posOld.x) > 18 ||
-                                                            Math.abs(this.pos.y - this.posOld.y) > 18
-                                                        ) &&
-                                                            //movement interpolation
-                                                            ((this.pos.x += (this.posOld.x - this.pos.x) * 0.5),
-                                                            (this.pos.y += (this.posOld.y - this.pos.y) * 0.5))`
-              },
-              {
-                  name: 'Mouse position without server delay (Game optimization)',
-                  from: '-Math.atan2(this.dir.y,this.dir.x)}',
-                  to: `-Math.atan2(this.dir.y, this.dir.x),
-                (window.localRotation) &&
-    ((window.game.activeId == this.__id && !window.game.spectating) &&
-        (this.bodyContainer.rotation = Math.atan2(
-            window.game.input.mousePos.y - window.innerHeight / 2,
-            window.game.input.mousePos.x - window.innerWidth / 2
-        )),
-    (window.game.activeId != this.__id) &&
-        (this.bodyContainer.rotation = -Math.atan2(this.dir.y, this.dir.x)));
-                }`
               },
               // {
               //     name: 'pieTimerClass',
@@ -1220,8 +1280,8 @@
               // },
               {
                   name: 'Class definition with methods',
-                  from: /(\w+)\s*=\s*24;\s*class\s+(\w+)\s*\{([\s\S]*?)\}\s*function/,
-                  to: `$1 = 24;\nclass $2 {\n$3\n}window.pieTimerClass = $2;\nfunction`
+                  from: /(\w+)=24,(\w+)=class\{container=new (\w+);/,
+                  to: '$1=24,$2=window.pieTimerClass=class{container=new $3;'
               },
               {
                   name: 'isMobile (basicDataInfo)',
@@ -1230,13 +1290,13 @@
               },
               {
                   name: 'Game',
-                  from: /this\.(m_)?shotBarn\s*=\s*new\s*(\w+)\s*;/,
-                  to: `window.game = window.installSurvevGptCompat(this),this.$1shotBarn = new $2;`
+                  from: /this\.game=new (\w+)\(this\.pixi,this\.audioManager,this\.localization,this\.config,this\.input,this\.inputBinds,this\.inputBindUi,this\.ambience,this\.resourceManager,(\w+),(\w+)\)/,
+                  to: 'this.game=window.game=window.installSurvevGptCompat(new $1(this.pixi,this.audioManager,this.localization,this.config,this.input,this.inputBinds,this.inputBindUi,this.ambience,this.resourceManager,$2,$3))'
               },
               {
                   name: 'Override gameControls',
-                  from: /this\.(m_)?sendMessage\s*\(\s*(\w+)\.(\w+)\s*,\s*(\w+)\s*,\s*(\d+)\s*\)\s*,\s*this\.(m_)?inputMsgTimeout\s*=\s*(\d+)\s*,\s*this\.(m_)?prevInputMsg\s*=\s*(\w+)\s*\)/,
-                  to: `this._newGameControls = window.initGameControls($4), this.$1sendMessage($2.$3, this._newGameControls, $5),\nthis.$6inputMsgTimeout = $7,\nthis.$8prevInputMsg = this._newGameControls)`
+                  from: /this\.(\w+)\((\w+)\.Input,(\w+),128\),this\.(\w+)=1,this\.(\w+)=\3/,
+                  to: 'this._newGameControls=window.initGameControls($3),this.$1($2.Input,this._newGameControls,128),this.$4=1,this.$5=this._newGameControls'
               },
           ];
 
