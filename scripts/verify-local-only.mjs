@@ -28,22 +28,25 @@ if (failures.length) {
     throw new Error(`Public host references are forbidden:\n${failures.join('\n')}`);
 }
 
-const urlPolicy = await readFile(new URL('../src/urlPolicy.js', import.meta.url), 'utf8');
-if (!urlPolicy.includes("ALLOWED_URLS = Object.freeze(['localhost'])")) {
-    throw new Error('Runtime allowlist must contain only localhost.');
-}
+const { ALLOWED_URLS } = await import(new URL('../src/urlPolicy.js', import.meta.url));
+if (ALLOWED_URLS.length === 0) throw new Error('Runtime allowlist cannot be empty.');
 
 const metadata = await readFile(new URL('../src/metadata.js', import.meta.url), 'utf8');
 const matchRules = [...metadata.matchAll(/^\/\/ @match\s+(.+)$/gm)].map((match) => match[1]);
 if (matchRules.length !== 1 || matchRules[0] !== '*://*/*') {
     throw new Error('Userscript metadata must inject globally so the runtime allowlist is authoritative.');
 }
-const webRequestRules = [...metadata.matchAll(/^\/\/ @webRequest\s+(.+)$/gm)].map((match) => match[1]);
+const { metadata: renderedMetadata } = await import(new URL('../src/metadata.js', import.meta.url));
+const webRequestRules = [...renderedMetadata.matchAll(/^\/\/ @webRequest\s+(.+)$/gm)]
+    .flatMap((match) => JSON.parse(match[1]));
+const expectedSelectors = new Set(ALLOWED_URLS.flatMap((hostname) =>
+    ['app', 'shared'].flatMap((bundle) => ['http', 'https'].map((protocol) =>
+        `${protocol}://${hostname}/*${bundle}-*.js`
+    ))
+));
 if (
-    webRequestRules.length !== 2
-    || webRequestRules.some((rule) => /"selector":"(?!https?:\/\/localhost\/)/.test(rule))
-) {
-    throw new Error('Resource interception must remain scoped to localhost.');
-}
+    webRequestRules.length !== expectedSelectors.size
+    || webRequestRules.some((rule) => !expectedSelectors.has(rule.selector) || rule.action !== 'cancel')
+) throw new Error('Rendered resource interception rules do not match ALLOWED_URLS.');
 
 console.log('Local-only verification passed.');

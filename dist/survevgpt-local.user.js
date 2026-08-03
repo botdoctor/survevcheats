@@ -1,14 +1,14 @@
 // ==UserScript==
-// @name         SurvevGPT Local Research Harness
+// @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
 // @version      0.1.0
-// @description  Localhost-only white-box gameplay security research harness.
+// @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
 // @match        *://*/*
 // @run-at       document-end
-// @webRequest   [{"selector":"http://localhost/*app-*.js","action":"cancel"},{"selector":"https://localhost/*app-*.js","action":"cancel"}]
-// @webRequest   [{"selector":"http://localhost/*shared-*.js","action":"cancel"},{"selector":"https://localhost/*shared-*.js","action":"cancel"}]
+// @webRequest   [{"selector":"http://localhost/*app-*.js","action":"cancel"},{"selector":"https://localhost/*app-*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*app-*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*app-*.js","action":"cancel"}]
+// @webRequest   [{"selector":"http://localhost/*shared-*.js","action":"cancel"},{"selector":"https://localhost/*shared-*.js","action":"cancel"},{"selector":"http://geekbar.xyz/*shared-*.js","action":"cancel"},{"selector":"https://geekbar.xyz/*shared-*.js","action":"cancel"}]
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @grant        GM_setValue
@@ -78,7 +78,7 @@
     });
   };
 
-  const ALLOWED_URLS = Object.freeze(['localhost']);
+  const ALLOWED_URLS = Object.freeze(['localhost', 'geekbar.xyz']);
 
   function isAllowedUrl(value, base = window.location.href) {
       try {

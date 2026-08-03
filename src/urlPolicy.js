@@ -1,4 +1,4 @@
-export const ALLOWED_URLS = Object.freeze(['survev.io']);
+export const ALLOWED_URLS = Object.freeze(['localhost', 'geekbar.xyz']);
 
 export function isAllowedUrl(value, base = window.location.href) {
     try {
@@ -25,4 +25,3 @@ export function installNavigationGuard() {
         console.error(`[SurvevGPT] Blocked non-allowlisted navigation: ${link.href}`);
     }, true);
 }
-
