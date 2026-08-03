@@ -21,6 +21,7 @@ export const metadata = `// ==UserScript==
 // @run-at       document-end
 // @webRequest   ${resourceRule()}
 // @grant        GM_xmlhttpRequest
+// @grant        GM_addElement
 // @grant        unsafeWindow
 // @grant        GM_setValue
 // @grant        GM_getValue

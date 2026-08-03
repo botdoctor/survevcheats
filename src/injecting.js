@@ -4,6 +4,7 @@ import { assertAllowedUrl } from './urlPolicy.js';
 console.log('Script injecting...');
 
 unsafeWindow.__SURVEVGPT_PATCH_STATUS__ = [];
+unsafeWindow.__SURVEVGPT_INJECTION_STATUS__ = { stage: 'discovering' };
 
 function applyPatches(source, patches, group) {
     for (const patch of patches) {
@@ -46,6 +47,19 @@ function requestText(url) {
         }));
     }
     throw new Error('[SurvevGPT] This userscript manager does not provide GM_xmlhttpRequest.');
+}
+
+async function createModuleScript() {
+    if (typeof GM !== 'undefined' && typeof GM.addElement === 'function') {
+        return GM.addElement(document.head, 'script', { type: 'module' });
+    }
+    if (typeof GM_addElement === 'function') {
+        return GM_addElement(document.head, 'script', { type: 'module' });
+    }
+    const script = document.createElement('script');
+    script.type = 'module';
+    document.head.append(script);
+    return script;
 }
 
 
@@ -98,6 +112,7 @@ function requestText(url) {
     );
 
     if (!appAsset || !sharedAsset || !vendorAsset) {
+        unsafeWindow.__SURVEVGPT_INJECTION_STATUS__ = { stage: 'classification-failed' };
         console.error('[SurvevGPT] Unable to classify game bundles.', assets.map((asset) => ({
             url: asset.url,
             size: asset.source.length,
@@ -110,6 +125,12 @@ function requestText(url) {
     const originalAppURL = appAsset.url;
     const originalSharedURL = sharedAsset.url;
     const originalVendorURL = vendorAsset.url;
+    unsafeWindow.__SURVEVGPT_INJECTION_STATUS__ = {
+        stage: 'bundles-classified',
+        app: originalAppURL,
+        shared: originalSharedURL,
+        vendor: originalVendorURL,
+    };
 
     const modifiedVendorURL = URL.createObjectURL(new Blob([vendorAsset.source], {
         type: 'application/javascript',
@@ -231,10 +252,9 @@ function requestText(url) {
         }
     };
 
-    const appScript = document.createElement('script');
-    appScript.type = 'module';
-    appScript.src = modifiedAppURL;
+    const appScript = await createModuleScript();
     appScript.onload = () => {
+        unsafeWindow.__SURVEVGPT_INJECTION_STATUS__ = { stage: 'module-loaded' };
         console.log('Im injected appjs', appScript);
 
         // Восстанавливаем оригинальный addEventListener
@@ -243,7 +263,16 @@ function requestText(url) {
         // Искусственно вызываем все сохраненные обработчики
         isolatedHandlers.forEach((handler) => handler.call(document));
     }
-    document.head.append(appScript)
+    appScript.onerror = (event) => {
+        document.addEventListener = originalAddEventListener;
+        unsafeWindow.__SURVEVGPT_INJECTION_STATUS__ = {
+            stage: 'module-load-failed',
+            src: modifiedAppURL,
+        };
+        console.error('[SurvevGPT] Rewritten application module failed to load.', event);
+    };
+    unsafeWindow.__SURVEVGPT_INJECTION_STATUS__ = { stage: 'loading-module' };
+    appScript.src = modifiedAppURL;
 })();
 
 
