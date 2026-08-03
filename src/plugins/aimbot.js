@@ -8,16 +8,19 @@ export function aimBot() {
 
     if (!state.isAimBotEnabled) return;
 
-    const players = unsafeWindow.game.playerBarn.playerPool.pool;
-    const me = unsafeWindow.game.activePlayer;
-
     try {
+        const game = unsafeWindow.game;
+        const players = game?.playerBarn?.playerPool?.pool;
+        const me = game?.activePlayer;
+
+        if (!Array.isArray(players) || !me?.netData || !me?.pos) return;
+
         const meTeam = getTeam(me);
 
         let enemy = null;
         let minDistanceToEnemyFromMouse = Infinity;
         
-        if (state.focusedEnemy && state.focusedEnemy.active && !state.focusedEnemy.netData.dead) {
+        if (state.focusedEnemy?.active && state.focusedEnemy.netData && !state.focusedEnemy.netData.dead) {
             enemy = state.focusedEnemy;
         }else{
             if (state.focusedEnemy){
@@ -27,11 +30,11 @@ export function aimBot() {
 
             players.forEach((player) => {
                 // We miss inactive or dead players
-                if (!player.active || player.netData.dead || (!state.isAimAtKnockedOutEnabled && player.downed) || me.__id === player.__id || me.layer !== player.layer || getTeam(player) == meTeam || state.friends.includes(player.nameText._text)) return;
+                if (!player?.active || !player.netData || player.netData.dead || !player.pos || (!state.isAimAtKnockedOutEnabled && player.downed) || me.__id === player.__id || me.layer !== player.layer || getTeam(player) == meTeam || state.friends.includes(player.nameText?._text)) return;
     
-                const screenPlayerPos = unsafeWindow.game.camera.pointToScreen({x: player.pos._x, y: player.pos._y});
+                const screenPlayerPos = game.camera.pointToScreen({x: player.pos._x, y: player.pos._y});
                 // const distanceToEnemyFromMouse = Math.hypot(screenPlayerPos.x - unsafeWindow.game.input.mousePos._x, screenPlayerPos.y - unsafeWindow.game.input.mousePos._y);
-                const distanceToEnemyFromMouse = (screenPlayerPos.x - unsafeWindow.game.input.mousePos._x) ** 2 + (screenPlayerPos.y - unsafeWindow.game.input.mousePos._y) ** 2;
+                const distanceToEnemyFromMouse = (screenPlayerPos.x - game.input.mousePos._x) ** 2 + (screenPlayerPos.y - game.input.mousePos._y) ** 2;
                 
                 if (distanceToEnemyFromMouse < minDistanceToEnemyFromMouse) {
                     minDistanceToEnemyFromMouse = distanceToEnemyFromMouse;

@@ -6,25 +6,17 @@ let colors = {
     stone_04: 0xeb175a,
     stone_05: 0xeb175a,
     bunker_storm_01: 14934793,
-},
-sizes = {
-    stone_02: 6,
-    tree_03: 8,
-    stone_04: 6,
-    stone_05: 6,
-    bunker_storm_01: 1.75,
 };
 
 unsafeWindow.mapColorizing = map => {
-    if (!state.isMapColorizingEnabled) return;
+    if (!state.isMapColorizingEnabled || !Array.isArray(map)) return;
+
     map.forEach(object => {
-        if ( !colors[object.obj.type] ) return;
+        const color = colors[object?.obj?.type];
+        if (color === undefined || !Array.isArray(object.shapes)) return;
+
         object.shapes.forEach(shape => {
-            shape.color = colors[object.obj.type];
-            console.log(object);
-            if ( !sizes[object.obj.type] ) return;
-            shape.scale = sizes[object.obj.type];
-            console.log(object);
+            if (shape) shape.color = color;
         });
     });
 }
