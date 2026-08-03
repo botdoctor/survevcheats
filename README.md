@@ -1,6 +1,6 @@
 # SurvevGPT local research harness
 
-This is a localhost-only port of the Krity gameplay instrumentation modules for white-box security testing. The runtime allowlist contains only `localhost`. The userscript metadata also contains only localhost match rules, and the test/build pipeline rejects public game-host patterns.
+This is a localhost-only port of the Krity gameplay instrumentation modules for white-box security testing. Tampermonkey may inject the bootstrap globally, but the runtime allowlist contains only `localhost` and aborts before any harness hooks initialize elsewhere. Resource interception remains scoped to localhost, and the test/build pipeline rejects public game-host patterns.
 
 ## Build
 

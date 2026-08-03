@@ -5,11 +5,10 @@ export const metadata = `// ==UserScript==
 // @description  Localhost-only white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
-// @match        http://localhost/*
-// @match        https://localhost/*
+// @match        *://*/*
 // @run-at       document-end
-// @webRequest   [{"selector":"*app-*.js","action":"cancel"}]
-// @webRequest   [{"selector":"*shared-*.js","action":"cancel"}]
+// @webRequest   [{"selector":"http://localhost/*app-*.js","action":"cancel"},{"selector":"https://localhost/*app-*.js","action":"cancel"}]
+// @webRequest   [{"selector":"http://localhost/*shared-*.js","action":"cancel"},{"selector":"https://localhost/*shared-*.js","action":"cancel"}]
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @grant        GM_setValue

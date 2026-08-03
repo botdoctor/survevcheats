@@ -35,11 +35,15 @@ if (!urlPolicy.includes("ALLOWED_URLS = Object.freeze(['localhost'])")) {
 
 const metadata = await readFile(new URL('../src/metadata.js', import.meta.url), 'utf8');
 const matchRules = [...metadata.matchAll(/^\/\/ @match\s+(.+)$/gm)].map((match) => match[1]);
+if (matchRules.length !== 1 || matchRules[0] !== '*://*/*') {
+    throw new Error('Userscript metadata must inject globally so the runtime allowlist is authoritative.');
+}
+const webRequestRules = [...metadata.matchAll(/^\/\/ @webRequest\s+(.+)$/gm)].map((match) => match[1]);
 if (
-    matchRules.length !== 2
-    || matchRules.some((rule) => !/^https?:\/\/localhost\/\*$/.test(rule))
+    webRequestRules.length !== 2
+    || webRequestRules.some((rule) => /"selector":"(?!https?:\/\/localhost\/)/.test(rule))
 ) {
-    throw new Error('Userscript metadata must match only HTTP(S) localhost URLs.');
+    throw new Error('Resource interception must remain scoped to localhost.');
 }
 
 console.log('Local-only verification passed.');
