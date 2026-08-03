@@ -21,10 +21,12 @@ Install `dist/survevgpt-local.user.js` in Tampermonkey and open an allowlisted h
 ## Controls
 
 - `[` toggles the research settings panel.
-- Arrow keys navigate the open panel, and Left/Right or Enter changes the selected setting.
+- Up/Down selects a category, Right or Enter opens its submenu to the right, and Left returns to the category list. Right or Enter changes the selected submenu option.
 - The persistent `GeekMenu` button also opens and closes the Call-of-Duty-style panel.
 
-Settings are disabled by default and persisted in `localStorage`. The native API is available as `window.__SURVEV_RESEARCH__` from the main menu onward.
+Settings are disabled by default and persisted in Tampermonkey storage with a `localStorage` fallback. The native API is available as `window.__SURVEV_RESEARCH__` from the main menu onward.
+
+GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visuals, ESP, and Trust Lab categories. The category list and right-hand submenu also support mouse navigation.
 
 Supported modules include predictive and priority-based aim, triggerbot, recoil-paced precision fire, movement-accuracy input, configurable smart loot and auto-heal, auto-door/reload/switch automation, zoom scaling, colored and range-limited ESP, off-screen indicators, enemy weapon/reload information, grenade trajectory/timer and danger zones, spectator and input diagnostics, culling sweep, smoke/obstacle opacity, visible names, weapon cone, bump fire, and spin aim. X-ray/ceiling removal and atlas recoloring deliberately fail closed because mutating Pixi texture validity caused the earlier renderer corruption.
 
@@ -44,4 +46,4 @@ The client defaults API, assets, matchmaking, and ping/WebSocket discovery to th
 
 ## Source revision and rollback
 
-The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `d33e93ea`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
+The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `14ed95bd`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
