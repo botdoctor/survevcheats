@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.16. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.17. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -43,11 +43,17 @@ This section tracks the controls in GeekMenu 0.3.16. When a menu option is added
 | Predictive aim | In Custom profile, tracks and smooths motion across network updates, compensates for snapshot age and measured latency, and solves an intercept using perk-adjusted bullet speed and range. Direction reversals reset the smoothing quickly. OP always enables this behavior. |
 | Aim at downed | Allows downed enemies in Custom profile. Default and OP ignore downed enemies. |
 | Triggerbot | Automatically aims and fires whenever an eligible target is acquired; left click is not required. |
+| Shoot through windows | Treats an intact window as soft cover. The aimbot keeps the target and fires the weapon-specific number of rounds needed to break the window before subsequent rounds continue through the opening. Other destructible obstacles remain hard blockers. |
+| Ricochet aiming | Enables a conservative one-bounce fallback through server-reflective rectangular obstacles. It is evaluated only when no direct or window shot exists, and explosive rounds are excluded because the server does not reflect them. |
+| Show ricochet path | Draws the accepted muzzle-to-bounce segment in cyan and bounce-to-target segment in amber without changing target selection. |
+| Ricochet confidence | Controls edge clearance and accepted incidence angle from `0.5` to `1`. Higher values reject more marginal bounce solutions. |
+| Maximum bounce angle | Limits the configured incidence angle from 10 to 85 degrees; the confidence threshold can make the effective limit stricter. |
+| Reflector distance | Limits the reflector search radius from 10 to 500 world units. Only the nearest 12 eligible reflectors are considered. |
 | Aim FOV | Custom-profile acquisition radius around the cursor, from 20 to 1500 screen pixels. |
 | Aim range | Custom-profile maximum world distance, from 10 to 1000 units. The equipped bullet's shorter physical range still wins. |
 | Priority | Custom-profile target scoring: closest to the crosshair, shortest world distance, or lowest health. |
 
-Aimbot, Trigger mode, and Triggerbot use the same reachability filter. A target must be an enemy within the selected FOV and configured aim range, within the equipped gun's actual bullet distance, on a compatible layer, and unobstructed by a solid bullet-height obstacle or another player. Predictive aim validates the predicted intercept path.
+Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target must be an enemy within the selected FOV and configured aim range, within the equipped gun's actual bullet distance, and on a compatible layer. Clear direct shots always win. When enabled, intact windows are a second-priority soft-cover path; weapon damage, obstacle multiplier, falloff, AP-round multiplier, window health, and remaining health determine the break-round estimate. Ricochet is a bounded final fallback that validates both legs against obstacles and intervening players, rejects edge and shallow-angle solutions, and extends predictive lead for the reflected path's additional flight time.
 
 ### Combat
 
@@ -102,7 +108,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability filter. A target 
 
 ### Trust Lab
 
-Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.16 allows ordinary features, including movement accuracy, on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
+Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.17 allows ordinary features, including movement accuracy, on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
 
 | Setting | Behavior |
 | --- | --- |
