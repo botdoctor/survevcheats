@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.9. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.10. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -65,9 +65,9 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability filter. A target 
 
 | Setting | Behavior |
 | --- | --- |
-| Auto pickup | Requests pickup for the nearest eligible item. Empty primary or secondary gun slots are filled first. |
+| Auto pickup | Requests pickup for the nearest eligible item. Empty primary or secondary gun slots are filled first. Cosmetic outfits and colored clothing are always ignored. |
 | Upgrade guns | With both gun slots filled, only picks up a gun whose damage, fire rate, range, and spread score is at least 8% better than the active gun. |
-| Pickup supplies | Allows Auto pickup to collect non-gun loot. Disable it for gun-only automatic pickup. |
+| Pickup supplies | Allows Auto pickup to collect useful non-gun loot, including helmets, armor, backpacks, scopes, ammo, healing items, and throwables. Disable it for gun-only automatic pickup. Cosmetic outfits remain excluded. |
 | Auto heal | Uses a healthkit when available, otherwise a bandage, when health is at or below the configured threshold and no other action is active. |
 | Heal below | Sets the Auto heal health threshold from 1 to 99. |
 | Auto doors | Uses a nearby unlocked, closed, interactable door on the player's current layer. |
@@ -127,4 +127,4 @@ The client defaults API, assets, matchmaking, and ping/WebSocket discovery to th
 
 ## Source revision and rollback
 
-The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `e366dca2`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
+The native client is based on the deployed Survev client revision `f65d45b4dc9566e652b290a4cf8c6c5bc5da2216`, with the native integration recorded at `2d2ff838`. To roll back, disable the native userscript and reinstall the previously committed userscript artifact. The stock page is not modified.
