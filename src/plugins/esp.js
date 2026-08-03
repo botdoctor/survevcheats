@@ -153,9 +153,12 @@ export function esp(){
                 const firing = Boolean(game.touch?.shotDetected || game.inputBinds?.isBindDown?.(inputCommands.Fire));
                 if (acPlayer == me && (!unsafeWindow.lastAimPos || !firing)){
                     //local rotation
+                    const mousePos = game.input?.mousePos;
+                    const mouseX = mousePos?.__survevGptRawX ?? mousePos?.x;
+                    const mouseY = mousePos?.__survevGptRawY ?? mousePos?.y;
                     atan = Math.atan2(
-                        game.input?.mousePos?._y - unsafeWindow.innerHeight / 2,
-                        game.input?.mousePos?._x - unsafeWindow.innerWidth / 2,
+                        mouseY - unsafeWindow.innerHeight / 2,
+                        mouseX - unsafeWindow.innerWidth / 2,
                     );
                 }else if(acPlayer == me && unsafeWindow.lastAimPos && firing){
                     const playerPointToScreen = game.camera.pointToScreen({x: acPlayer.pos._x, y: acPlayer.pos._y})

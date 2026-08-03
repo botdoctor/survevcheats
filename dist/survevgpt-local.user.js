@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.6
+// @version      0.1.7
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
@@ -124,7 +124,7 @@
 
   (() => {
       const authorization = assertAllowedPage(unsafeWindow.location);
-      console.info('[SurvevGPT 0.1.6] Authorized page', authorization);
+      console.info('[SurvevGPT 0.1.7] Authorized page', authorization);
 
       installScriptIsolation();
 
@@ -1610,8 +1610,12 @@
                   if (!player?.active || !player.netData || player.netData.dead || !player.pos || (!state.isAimAtKnockedOutEnabled && player.downed) || me.__id === player.__id || me.layer !== player.layer || getTeam(player) == meTeam || state.friends.includes(player.nameText?._text)) return;
       
                   const screenPlayerPos = game.camera.pointToScreen({x: player.pos._x, y: player.pos._y});
-                  // const distanceToEnemyFromMouse = Math.hypot(screenPlayerPos.x - unsafeWindow.game.input.mousePos._x, screenPlayerPos.y - unsafeWindow.game.input.mousePos._y);
-                  const distanceToEnemyFromMouse = (screenPlayerPos.x - game.input.mousePos._x) ** 2 + (screenPlayerPos.y - game.input.mousePos._y) ** 2;
+                  const mousePos = game.input?.mousePos;
+                  const mouseX = mousePos?.__survevGptRawX ?? mousePos?.x;
+                  const mouseY = mousePos?.__survevGptRawY ?? mousePos?.y;
+                  if (!Number.isFinite(mouseX) || !Number.isFinite(mouseY)) return;
+
+                  const distanceToEnemyFromMouse = (screenPlayerPos.x - mouseX) ** 2 + (screenPlayerPos.y - mouseY) ** 2;
                   
                   if (distanceToEnemyFromMouse < minDistanceToEnemyFromMouse) {
                       minDistanceToEnemyFromMouse = distanceToEnemyFromMouse;
@@ -1648,7 +1652,7 @@
               };
               
               // AutoMelee
-              if(state.isMeleeAttackEnabled && distanceToEnemy <= 8) {
+              if(state.isMeleeAttackEnabled && me.localData?.curWeapIdx !== 3 && distanceToEnemy <= 8) {
                   const moveAngle = calcAngle(enemy.pos, me.pos) + Math.PI;
                   unsafeWindow.aimTouchMoveDir = {
                       x: Math.cos(moveAngle),
@@ -2011,7 +2015,7 @@
       }
 
       // autoMelee
-      if (firing && unsafeWindow.aimTouchMoveDir && gameControls.touchMoveDir) {
+      if (firing && unsafeWindow.aimTouchMoveDir && gameControls.touchMoveDir && game?.activePlayer?.localData?.curWeapIdx !== 3) {
           if (unsafeWindow.aimTouchDistanceToEnemy < 4) gameControls.addInput?.(inputCommands.EquipMelee);
           gameControls.touchMoveActive = true;
           gameControls.touchMoveLen = 255;
@@ -2050,6 +2054,16 @@
 
       let rawX = mousePos.x;
       let rawY = mousePos.y;
+      Object.defineProperties(mousePos, {
+          __survevGptRawX: {
+              configurable: true,
+              get: () => rawX,
+          },
+          __survevGptRawY: {
+              configurable: true,
+              get: () => rawY,
+          },
+      });
       Object.defineProperty(mousePos, '__survevGptOverridden', {
           configurable: true,
           value: true,
@@ -2406,9 +2420,12 @@
                   const firing = Boolean(game.touch?.shotDetected || game.inputBinds?.isBindDown?.(inputCommands.Fire));
                   if (acPlayer == me && (!unsafeWindow.lastAimPos || !firing)){
                       //local rotation
+                      const mousePos = game.input?.mousePos;
+                      const mouseX = mousePos?.__survevGptRawX ?? mousePos?.x;
+                      const mouseY = mousePos?.__survevGptRawY ?? mousePos?.y;
                       atan = Math.atan2(
-                          game.input?.mousePos?._y - unsafeWindow.innerHeight / 2,
-                          game.input?.mousePos?._x - unsafeWindow.innerWidth / 2,
+                          mouseY - unsafeWindow.innerHeight / 2,
+                          mouseX - unsafeWindow.innerWidth / 2,
                       );
                   }else if(acPlayer == me && unsafeWindow.lastAimPos && firing){
                       const playerPointToScreen = game.camera.pointToScreen({x: acPlayer.pos._x, y: acPlayer.pos._y});

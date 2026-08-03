@@ -33,8 +33,12 @@ export function aimBot() {
                 if (!player?.active || !player.netData || player.netData.dead || !player.pos || (!state.isAimAtKnockedOutEnabled && player.downed) || me.__id === player.__id || me.layer !== player.layer || getTeam(player) == meTeam || state.friends.includes(player.nameText?._text)) return;
     
                 const screenPlayerPos = game.camera.pointToScreen({x: player.pos._x, y: player.pos._y});
-                // const distanceToEnemyFromMouse = Math.hypot(screenPlayerPos.x - unsafeWindow.game.input.mousePos._x, screenPlayerPos.y - unsafeWindow.game.input.mousePos._y);
-                const distanceToEnemyFromMouse = (screenPlayerPos.x - game.input.mousePos._x) ** 2 + (screenPlayerPos.y - game.input.mousePos._y) ** 2;
+                const mousePos = game.input?.mousePos;
+                const mouseX = mousePos?.__survevGptRawX ?? mousePos?.x;
+                const mouseY = mousePos?.__survevGptRawY ?? mousePos?.y;
+                if (!Number.isFinite(mouseX) || !Number.isFinite(mouseY)) return;
+
+                const distanceToEnemyFromMouse = (screenPlayerPos.x - mouseX) ** 2 + (screenPlayerPos.y - mouseY) ** 2;
                 
                 if (distanceToEnemyFromMouse < minDistanceToEnemyFromMouse) {
                     minDistanceToEnemyFromMouse = distanceToEnemyFromMouse;
@@ -71,7 +75,7 @@ export function aimBot() {
             }
             
             // AutoMelee
-            if(state.isMeleeAttackEnabled && distanceToEnemy <= 8) {
+            if(state.isMeleeAttackEnabled && me.localData?.curWeapIdx !== 3 && distanceToEnemy <= 8) {
                 const moveAngle = calcAngle(enemy.pos, me.pos) + Math.PI;
                 unsafeWindow.aimTouchMoveDir = {
                     x: Math.cos(moveAngle),

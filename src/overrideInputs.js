@@ -89,7 +89,7 @@ unsafeWindow.initGameControls = function(gameControls){
     }
 
     // autoMelee
-    if (firing && unsafeWindow.aimTouchMoveDir && gameControls.touchMoveDir) {
+    if (firing && unsafeWindow.aimTouchMoveDir && gameControls.touchMoveDir && game?.activePlayer?.localData?.curWeapIdx !== 3) {
         if (unsafeWindow.aimTouchDistanceToEnemy < 4) gameControls.addInput?.(inputCommands.EquipMelee);
         gameControls.touchMoveActive = true;
         gameControls.touchMoveLen = 255;

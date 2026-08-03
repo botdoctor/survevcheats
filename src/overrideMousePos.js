@@ -11,6 +11,16 @@ export function overrideMousePos() {
 
     let rawX = mousePos.x;
     let rawY = mousePos.y;
+    Object.defineProperties(mousePos, {
+        __survevGptRawX: {
+            configurable: true,
+            get: () => rawX,
+        },
+        __survevGptRawY: {
+            configurable: true,
+            get: () => rawY,
+        },
+    });
     Object.defineProperty(mousePos, '__survevGptOverridden', {
         configurable: true,
         value: true,
