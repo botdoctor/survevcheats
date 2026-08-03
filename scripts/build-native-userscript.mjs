@@ -32,7 +32,12 @@ const output = `${renderNativeMetadata(packageJson.version)}
 (() => {
     const payload = ${JSON.stringify(payload)};
     const buildInfo = ${JSON.stringify(buildInfo)};
-    (${nativeLoaderRuntime.toString()})(unsafeWindow, payload, buildInfo);
+    const storage = {
+        get: (key) => GM_getValue(key),
+        set: (key, value) => GM_setValue(key, value),
+        remove: (key) => GM_deleteValue(key),
+    };
+    (${nativeLoaderRuntime.toString()})(unsafeWindow, payload, buildInfo, storage);
 })();
 `;
 

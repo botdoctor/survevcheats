@@ -16,6 +16,9 @@ if (matches.length !== expected.length || expected.some((value) => !matches.incl
 }
 if (!metadata.includes('// @run-at       document-start')) throw new Error('Native loader must run at document-start.');
 if (!metadata.includes('// @webRequest')) throw new Error('Native loader must block the stock client at request time.');
+for (const grant of ['GM_getValue', 'GM_setValue', 'GM_deleteValue']) {
+    if (!metadata.includes(`// @grant        ${grant}`)) throw new Error(`Native loader must grant ${grant}.`);
+}
 
 const runtime = nativeLoaderRuntime.toString();
 for (const required of [
@@ -25,6 +28,8 @@ for (const required of [
     'payload-injected',
     'survevgpt:native-ready',
     'client-ready',
+    'survevgpt:settings-changed',
+    'survevgpt:settings-reset',
 ]) {
     if (!runtime.includes(required)) throw new Error(`Native loader diagnostic is missing: ${required}`);
 }

@@ -1,9 +1,10 @@
 // This file is serialized into the generated userscript by build-native-userscript.mjs.
 // Keep all dependencies passed as arguments so it remains independently testable.
-export function nativeLoaderRuntime(pageWindow, payload, buildInfo) {
+export function nativeLoaderRuntime(pageWindow, payload, buildInfo, storage) {
     'use strict';
 
     const STATUS_KEY = '__SURVEVGPT_NATIVE_STATUS__';
+    const SETTINGS_KEY = 'survevgpt.research.settings.v1';
     const allowedHosts = Object.freeze(['localhost', 'survev.io', 'geekbar.xyz']);
     const hostname = pageWindow.location.hostname.toLowerCase().replace(/\.$/, '');
     const allowed = allowedHosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
@@ -45,6 +46,28 @@ export function nativeLoaderRuntime(pageWindow, payload, buildInfo) {
         writable: false,
     });
     report('authorized', { hostname, revision: buildInfo.revision });
+
+    try {
+        const savedSettings = storage?.get(SETTINGS_KEY);
+        if (typeof savedSettings === 'string') pageWindow.__SURVEVGPT_SAVED_SETTINGS__ = savedSettings;
+    } catch (error) {
+        fail('settings-load-failed', error);
+    }
+    pageWindow.addEventListener('survevgpt:settings-changed', (event) => {
+        if (typeof event.detail !== 'string') return;
+        try {
+            storage?.set(SETTINGS_KEY, event.detail);
+        } catch (error) {
+            fail('settings-save-failed', error);
+        }
+    });
+    pageWindow.addEventListener('survevgpt:settings-reset', () => {
+        try {
+            storage?.remove(SETTINGS_KEY);
+        } catch (error) {
+            fail('settings-reset-failed', error);
+        }
+    });
 
     pageWindow.addEventListener('survevgpt:native-ready', (event) => {
         report('client-ready', event.detail);

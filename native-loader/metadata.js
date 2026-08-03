@@ -29,5 +29,8 @@ export function renderNativeMetadata(version) {
 // @run-at       document-start
 // @webRequest   ${JSON.stringify(resourceRules())}
 // @grant        unsafeWindow
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_deleteValue
 // ==/UserScript==`;
 }
