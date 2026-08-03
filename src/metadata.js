@@ -20,8 +20,8 @@ export const metadata = `// ==UserScript==
 // @author       SurvevGPT
 // @license      GPL3
 // @match        *://localhost/*
-// @match        *://geekbar.xyz/*
-// @match        *://*.geekbar.xyz/*
+// @match        *://survev.io/*
+// @match        *://*.survev.io/*
 // @run-at       document-start
 // @webRequest   ${resourceRule()}
 // @grant        GM_xmlhttpRequest

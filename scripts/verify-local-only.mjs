@@ -2,7 +2,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url);
-const forbiddenHosts = /survev\.io|resurviv\.biz|zurviv\.io|50v50\.online|eu-comp\.net|67\.217\.244\.178/i;
+const forbiddenHosts = /resurviv\.biz|zurviv\.io|50v50\.online|eu-comp\.net|67\.217\.244\.178/i;
 const allowedLegacyFiles = new Set(['README.md']);
 
 async function walk(directory) {
@@ -47,8 +47,8 @@ if (!metadata.includes('// @run-at       document-start')) {
 const matchRules = [...metadata.matchAll(/^\/\/ @match\s+(.+)$/gm)].map((match) => match[1]);
 const expectedMatchRules = new Set([
     '*://localhost/*',
-    '*://geekbar.xyz/*',
-    '*://*.geekbar.xyz/*',
+    '*://survev.io/*',
+    '*://*.survev.io/*',
 ]);
 if (matchRules.length !== expectedMatchRules.size || matchRules.some((rule) => !expectedMatchRules.has(rule))) {
     throw new Error('Userscript metadata match rules must be limited to the runtime allowlist.');

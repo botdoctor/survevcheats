@@ -4,7 +4,7 @@ export function nativeLoaderRuntime(pageWindow, payload, buildInfo) {
     'use strict';
 
     const STATUS_KEY = '__SURVEVGPT_NATIVE_STATUS__';
-    const allowedHosts = Object.freeze(['localhost', 'geekbar.xyz']);
+    const allowedHosts = Object.freeze(['localhost', 'survev.io']);
     const hostname = pageWindow.location.hostname.toLowerCase().replace(/\.$/, '');
     const allowed = allowedHosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
     const status = pageWindow[STATUS_KEY] = {
@@ -84,7 +84,7 @@ export function nativeLoaderRuntime(pageWindow, payload, buildInfo) {
         try {
             const source = `${payload}\n//# sourceURL=survevgpt-native-client-${buildInfo.revision}.js`;
             // Taking Function from unsafeWindow constructs and executes the payload in the page realm.
-            // Geekbar's stock client already requires unsafe-eval; this avoids relying on inline-script CSP.
+            // The stock client already requires unsafe-eval; this avoids relying on inline-script CSP.
             pageWindow.Function(source)();
             status.stockScriptObserverActive = false;
             observer.disconnect();

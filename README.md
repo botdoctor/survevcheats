@@ -1,6 +1,6 @@
 # SurvevGPT source-native research client
 
-This repository packages the checked-in Survev client source as a self-contained Tampermonkey userscript for authorized testing on `localhost` and `geekbar.xyz`. It does not patch or regex-rewrite an obfuscated production bundle.
+This repository packages the checked-in Survev client source as a self-contained Tampermonkey userscript for authorized testing on `localhost` and the project-owned `survev.io` deployment. It does not patch or regex-rewrite an obfuscated production bundle.
 
 The source-native build lives in the adjacent `survev` repository. `survev/client/src/research/` implements features through typed `Game`, input, player, camera, and Pixi APIs. The native Vite build emits one IIFE and embeds every generated texture atlas. The loader blocks the stock JavaScript client at `document-start`, preserves the page and non-JavaScript assets/API endpoints, and executes the embedded client in the page realm.
 
