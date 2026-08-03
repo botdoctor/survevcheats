@@ -45,8 +45,13 @@ if (!metadata.includes('// @run-at       document-start')) {
     throw new Error('The userscript must start before the original client modules are requested.');
 }
 const matchRules = [...metadata.matchAll(/^\/\/ @match\s+(.+)$/gm)].map((match) => match[1]);
-if (matchRules.length !== 1 || matchRules[0] !== '*://*/*') {
-    throw new Error('Userscript metadata must inject globally so the runtime allowlist is authoritative.');
+const expectedMatchRules = new Set([
+    '*://localhost/*',
+    '*://geekbar.xyz/*',
+    '*://*.geekbar.xyz/*',
+]);
+if (matchRules.length !== expectedMatchRules.size || matchRules.some((rule) => !expectedMatchRules.has(rule))) {
+    throw new Error('Userscript metadata match rules must be limited to the runtime allowlist.');
 }
 const { metadata: renderedMetadata } = await import(new URL('../src/metadata.js', import.meta.url));
 const webRequestRules = [...renderedMetadata.matchAll(/^\/\/ @webRequest\s+(.+)$/gm)]

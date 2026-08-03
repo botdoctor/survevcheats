@@ -80,7 +80,8 @@ async function createModuleScript() {
         }))];
     const results = await Promise.allSettled(candidateUrls.map(async (url) => {
         const source = await requestText(url);
-        const imports = [...source.matchAll(/from\s*["']([^"']+)["']/g)].map((match) => match[1]);
+        const imports = [...source.matchAll(/(?:from\s*|import\s*\(\s*|import\s*)["']([^"']+)["']/g)]
+            .map((match) => match[1]);
         return { url, source, imports };
     }));
     const assets = results

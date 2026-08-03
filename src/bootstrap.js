@@ -1,8 +1,8 @@
 import { assertAllowedPage } from './urlPolicy.js';
 
 (() => {
-    const authorization = assertAllowedPage();
-    console.info('[SurvevGPT 0.1.5] Authorized page', authorization);
+    const authorization = assertAllowedPage(unsafeWindow.location);
+    console.info('[SurvevGPT 0.1.6] Authorized page', authorization);
 
     installScriptIsolation();
 
@@ -26,7 +26,7 @@ function installScriptIsolation() {
 
     const policy = document.createElement('meta');
     policy.httpEquiv = 'Content-Security-Policy';
-    policy.content = "script-src 'unsafe-inline' 'unsafe-eval' blob:; worker-src blob:";
+    policy.content = "script-src 'unsafe-inline' 'unsafe-eval' blob: https://challenges.cloudflare.com https://s.nitropay.com; worker-src blob:";
     policy.dataset.survevgptScriptIsolation = 'true';
 
     const parent = document.head || document.documentElement;

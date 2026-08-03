@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         SurvevGPT Allowlisted Research Harness
 // @namespace    survevgpt.local
-// @version      0.1.5
+// @version      0.1.6
 // @description  Allowlisted white-box gameplay security research harness.
 // @author       SurvevGPT
 // @license      GPL3
-// @match        *://*/*
+// @match        *://localhost/*
+// @match        *://geekbar.xyz/*
+// @match        *://*.geekbar.xyz/*
 // @run-at       document-start
 // @webRequest   [{"selector":"http://localhost/js/*.js","action":"cancel"},{"selector":"https://localhost/js/*.js","action":"cancel"},{"selector":"http://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://geekbar.xyz/js/*.js","action":"cancel"},{"selector":"http://*.geekbar.xyz/js/*.js","action":"cancel"},{"selector":"https://*.geekbar.xyz/js/*.js","action":"cancel"}]
 // @grant        GM_xmlhttpRequest
@@ -121,8 +123,8 @@
   }
 
   (() => {
-      const authorization = assertAllowedPage();
-      console.info('[SurvevGPT 0.1.5] Authorized page', authorization);
+      const authorization = assertAllowedPage(unsafeWindow.location);
+      console.info('[SurvevGPT 0.1.6] Authorized page', authorization);
 
       installScriptIsolation();
 
@@ -146,7 +148,7 @@
 
       const policy = document.createElement('meta');
       policy.httpEquiv = 'Content-Security-Policy';
-      policy.content = "script-src 'unsafe-inline' 'unsafe-eval' blob:; worker-src blob:";
+      policy.content = "script-src 'unsafe-inline' 'unsafe-eval' blob: https://challenges.cloudflare.com https://s.nitropay.com; worker-src blob:";
       policy.dataset.survevgptScriptIsolation = 'true';
 
       const parent = document.head || document.documentElement;
@@ -1240,7 +1242,8 @@
           }))];
       const results = await Promise.allSettled(candidateUrls.map(async (url) => {
           const source = await requestText(url);
-          const imports = [...source.matchAll(/from\s*["']([^"']+)["']/g)].map((match) => match[1]);
+          const imports = [...source.matchAll(/(?:from\s*|import\s*\(\s*|import\s*)["']([^"']+)["']/g)]
+              .map((match) => match[1]);
           return { url, source, imports };
       }));
       const assets = results
