@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.18. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.19. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -108,7 +108,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target 
 
 ### Trust Lab
 
-Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.18 allows ordinary features, including movement accuracy, on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
+Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.19 allows ordinary features, including movement accuracy, on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
 
 | Setting | Behavior |
 | --- | --- |
@@ -144,6 +144,8 @@ These probes send bounded test traffic to the active game socket. They run only 
 | --- | --- | --- |
 | Duplicate input replay | Sends the same sequenced input twice. | Duplicate or stale state is ignored without corrupting player state. |
 | Conflicting actions | Sends one input containing reload, use, interact, weapon switch, and held fire together. | The server applies a valid transition or rejects incompatible actions safely. |
+| Movement during revive | While the local player is actively reviving, sends one right-movement input and measures displacement and action state 250 ms later. | Movement is rejected or constrained according to the server's revive-speed rule; the observation reports if movement and revive coexist. |
+| Reload + heal collision | With a damaged player, usable healing item, and reloadable gun, sends reload and item use in one input and observes the selected action. | The server normalizes the collision to one reload or healing action and never completes both concurrently. |
 | Invalid input enum | Sends one out-of-range input action value. | The value is rejected without an uncaught exception or match-wide failure. |
 | Truncated input packet | Sends a one-byte Input message with no body. | The connection is rejected safely and the match process remains contained. |
 | Jitter/reorder burst | Schedules eight duplicate inputs in a bounded non-monotonic delay pattern. | Sequence handling remains deterministic and responsive. |
