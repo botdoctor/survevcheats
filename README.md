@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.24. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.25. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
