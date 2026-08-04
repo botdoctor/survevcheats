@@ -1,6 +1,6 @@
 {
   "name": "survevgpt-local-research-harness",
-  "version": "0.3.22",
+  "version": "0.3.23",
   "description": "Localhost-only white-box gameplay security research harness.",
   "main": "init.js",
   "type": "module",
@@ -9,7 +9,7 @@
     "test:native-loader": "node scripts/verify-native-loader.mjs",
     "build": "vite build",
     "build:native-userscript": "node scripts/build-native-userscript.mjs",
-    "build:native": "cd ../survev/client && SURVEV_GIT_VERSION=7054b9f90c04859589c6d8911bd7387c56ecd258 corepack pnpm build:native && cd ../../survevgpt && npm run test:native-loader && SURVEVGPT_NATIVE_REVISION=7054b9f9 npm run build:native-userscript",
+    "build:native": "cd ../survev/client && SURVEV_GIT_VERSION=3519ba09bfe62f338cca4d809017606a5b88c9ef corepack pnpm build:native && cd ../../survevgpt && npm run test:native-loader && SURVEVGPT_NATIVE_REVISION=3519ba09 npm run build:native-userscript",
     "watch": "chokidar 'src/**/*' -c 'npm run build'"
   },
   "repository": {

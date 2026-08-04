@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.22. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.23. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -77,7 +77,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target 
 | Auto heal | Uses a healthkit when available, otherwise a bandage, when health is at or below the configured threshold and no other action is active. |
 | Heal below | Sets the Auto heal health threshold from 1 to 99. |
 | Auto doors | Uses a nearby unlocked, closed, interactable door on the player's current layer. |
-| Mobile mode (trusted, rejoin) | On a Trusted URL only, reports a mobile client on the next match join to test server handling of the client-provided mobile flag. The toggle remains disabled elsewhere and changing it does not affect an existing connection. |
+| Mobile mode (rejoin) | Reports a mobile client on the next match join. It is available on every allowed URL, persists with the other Automation settings, and does not affect an existing connection. |
 
 ### Visuals
 
@@ -109,7 +109,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target 
 
 ### Trust Lab
 
-Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script places editable `trustedUrls` immediately below `allowedUrls` and before the embedded native payload. Version 0.3.22 trusts `localhost`, `geekbar.xyz`, and their matching subdomains. The Trust Lab page gate, target/active WebSocket gate, mobile-identity join claim, culling sweep, and destructive probes all derive from that single list.
+Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script places editable `trustedUrls` immediately below `allowedUrls` and before the embedded native payload. Version 0.3.23 trusts `localhost`, `geekbar.xyz`, and their matching subdomains. The Trust Lab page gate, target/active WebSocket gate, culling sweep, and destructive probes all derive from that single list. Mobile mode is an ordinary Automation feature and uses the allowed-URL policy instead.
 
 | Setting | Behavior |
 | --- | --- |
