@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.25. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.26. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -42,6 +42,7 @@ This section tracks the controls in GeekMenu 0.3.25. When a menu option is added
 | Trigger mode | While left click is held, forwards fire only when Aimbot has a reachable target. It suppresses fire when no target qualifies and resumes when one does. This is a held-fire gate, unlike Triggerbot. Flare guns bypass all aimbot and trigger gating. |
 | Predictive aim | In Custom profile, tracks and smooths motion across network updates, compensates for snapshot age and measured latency, and solves an intercept using perk-adjusted bullet speed and range. Direction reversals reset the smoothing quickly. OP always enables this behavior. |
 | Aim at downed | Allows downed enemies in every profile. Standing enemies always occupy a higher target tier, so a reachable standing enemy wins over every downed enemy regardless of priority score or shot-path type. |
+| Melee mode | With Aimbot enabled and a melee equipped, begins tracking an eligible enemy 0.8 world units outside the equipped weapon's scaled attack reach. It aims using the server-style attack offset and radius, and attacks automatically only when the target overlaps the actual melee hit circle with no blocking obstacle. |
 | Triggerbot | Automatically aims and fires whenever an eligible target is acquired; left click is not required. |
 | Shoot through windows | Treats an intact window as soft cover. The aimbot keeps the target and fires the weapon-specific number of rounds needed to break the window before subsequent rounds continue through the opening. Other destructible obstacles remain hard blockers. |
 | Ricochet aiming | Enables a conservative one-bounce fallback through server-reflective rectangular obstacles. It is evaluated only when no direct or window shot exists, and explosive rounds are excluded because the server does not reflect them. |
@@ -60,7 +61,7 @@ Aimbot, Trigger mode, and Triggerbot use the same muzzle-aware reachability solv
 | Setting | Behavior |
 | --- | --- |
 | Precision fire | Paces held fire using the gun's recoil and fire-delay timing instead of sending a shot continuously. |
-| Movement accuracy | Uses the locally observed authoritative shot cooldown to create a movement-free server sample before each gunshot. It briefly gates firing for that preparation sample, keeps movement released through the firing window, and restores movement during the rest of the weapon cooldown. It runs after aimbot/trigger decisions, ignores non-gun weapons, supports keyboard and touch movement, and is available on every allowed URL. |
+| Movement accuracy | Uses the locally observed authoritative shot cooldown to create a movement-free server sample before each gunshot. It briefly gates firing for that preparation sample, keeps movement released through the firing window, and restores movement during the rest of the weapon cooldown. An empty magazine or active reload immediately releases the movement cycle even while fire remains held. It runs after aimbot/trigger decisions, ignores non-gun weapons, supports keyboard and touch movement, and is available on every allowed URL. |
 | Bump fire | Repeats the shot-start input while holding a single-fire gun. |
 | Auto reload | Requests reload when the equipped gun is empty and matching reserve ammunition is available. |
 | Auto switch | After firing a slower gun, switches to the other loaded primary/secondary weapon. |
