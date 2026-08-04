@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.17. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.18. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -41,7 +41,7 @@ This section tracks the controls in GeekMenu 0.3.17. When a menu option is added
 | Aim while firing | In Custom profile, only acquire and track while primary fire is requested. |
 | Trigger mode | While left click is held, forwards fire only when Aimbot has a reachable target. It suppresses fire when no target qualifies and resumes when one does. This is a held-fire gate, unlike Triggerbot. |
 | Predictive aim | In Custom profile, tracks and smooths motion across network updates, compensates for snapshot age and measured latency, and solves an intercept using perk-adjusted bullet speed and range. Direction reversals reset the smoothing quickly. OP always enables this behavior. |
-| Aim at downed | Allows downed enemies in Custom profile. Default and OP ignore downed enemies. |
+| Aim at downed | Allows downed enemies in every profile. Standing enemies always occupy a higher target tier, so a reachable standing enemy wins over every downed enemy regardless of priority score or shot-path type. |
 | Triggerbot | Automatically aims and fires whenever an eligible target is acquired; left click is not required. |
 | Shoot through windows | Treats an intact window as soft cover. The aimbot keeps the target and fires the weapon-specific number of rounds needed to break the window before subsequent rounds continue through the opening. Other destructible obstacles remain hard blockers. |
 | Ricochet aiming | Enables a conservative one-bounce fallback through server-reflective rectangular obstacles. It is evaluated only when no direct or window shot exists, and explosive rounds are excluded because the server does not reflect them. |
@@ -108,7 +108,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target 
 
 ### Trust Lab
 
-Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.17 allows ordinary features, including movement accuracy, on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
+Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script likewise places `trustedUrls` immediately below `allowedUrls`. Version 0.3.18 allows ordinary features, including movement accuracy, on `localhost`, `survev.io`, and `geekbar.xyz`, but trusts only `localhost` for Trust Lab probes.
 
 | Setting | Behavior |
 | --- | --- |
