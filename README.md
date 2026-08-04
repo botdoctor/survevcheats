@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.27. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.28. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -118,6 +118,7 @@ Trust Lab authorization is separate from ordinary client authorization. The edit
 | --- | --- |
 | Culling sweep | Alternates portrait input to test the server's portrait/landscape object-culling boundary. |
 | Input diagnostics | Displays target state, eligible-target count, movement/fire flags, aim direction/range, and Trust Lab claims. |
+| Spread monitor | Displays the movement-accuracy cycle, outgoing movement state, latest accepted gunshot's server-position movement class and effective spread, recoil-settled state, and cumulative stationary/moving sample rate. It is available on every allowed URL even though its toggle is organized under Trust Lab. |
 | Selected probe | Chooses one read-only or destructive probe. Destructive probe names begin with `!`. |
 | Arm destructive probes | Temporarily permits destructive probes. It automatically turns off after a destructive run. |
 | Run selected probe | Runs the selected probe and appends its structured result to the report. |
@@ -154,7 +155,7 @@ These probes send bounded test traffic to the active game socket. They run only 
 | Jitter/reorder burst | Schedules eight duplicate inputs in a bounded non-monotonic delay pattern. | Sequence handling remains deterministic and responsive. |
 | Bounded input-rate burst | Sends 32 duplicate inputs in one bounded burst. | Rate controls absorb or reject the burst without resource growth or process failure. |
 
-Probe results are stored in `window.__SURVEV_RESEARCH__.status.trustReport`, printed as `[SurvevGPT Trust Lab]` console records, capped at 100 entries, and summarized in the on-screen diagnostics overlay. Outcomes are `pass`, `warning`, `sent`, `blocked`, or `error` and include timestamps and structured details for GitHub issue reports.
+Probe results are stored in `window.__SURVEV_RESEARCH__.status.trustReport`, printed as `[SurvevGPT Trust Lab]` console records, capped at 100 entries, and summarized in the top-right on-screen diagnostics overlay. Input diagnostics and the spread monitor share that top-right notification area. Outcomes are `pass`, `warning`, `sent`, `blocked`, or `error` and include timestamps and structured details for GitHub issue reports.
 
 ### Deliberately unsupported
 
