@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.21. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.22. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -60,7 +60,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target 
 | Setting | Behavior |
 | --- | --- |
 | Precision fire | Paces held fire using the gun's recoil and fire-delay timing instead of sending a shot continuously. |
-| Movement accuracy | Uses the locally observed authoritative shot cooldown to clear reported movement shortly before an accepted gunshot and through its round trip. It restores movement between rounds, runs after aimbot/trigger decisions, and never suppresses movement while holding a throwable. Available on every allowed URL. |
+| Movement accuracy | Uses the locally observed authoritative shot cooldown to create a movement-free server sample before each gunshot. It briefly gates firing for that preparation sample, keeps movement released through the firing window, and restores movement during the rest of the weapon cooldown. It runs after aimbot/trigger decisions, ignores non-gun weapons, supports keyboard and touch movement, and is available on every allowed URL. |
 | Bump fire | Repeats the shot-start input while holding a single-fire gun. |
 | Auto reload | Requests reload when the equipped gun is empty and matching reserve ammunition is available. |
 | Auto switch | After firing a slower gun, switches to the other loaded primary/secondary weapon. |
@@ -77,6 +77,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target 
 | Auto heal | Uses a healthkit when available, otherwise a bandage, when health is at or below the configured threshold and no other action is active. |
 | Heal below | Sets the Auto heal health threshold from 1 to 99. |
 | Auto doors | Uses a nearby unlocked, closed, interactable door on the player's current layer. |
+| Mobile mode (trusted, rejoin) | On a Trusted URL only, reports a mobile client on the next match join to test server handling of the client-provided mobile flag. The toggle remains disabled elsewhere and changing it does not affect an existing connection. |
 
 ### Visuals
 
@@ -108,11 +109,10 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target 
 
 ### Trust Lab
 
-Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script places editable `trustedUrls` immediately below `allowedUrls` and before the embedded native payload. Version 0.3.21 trusts `localhost`, `geekbar.xyz`, and their matching subdomains. The Trust Lab page gate, target/active WebSocket gate, mobile-identity join claim, culling sweep, and destructive probes all derive from that single list.
+Trust Lab authorization is separate from ordinary client authorization. The editable policy is declared near the top of `src/urlPolicy.js` with `TRUSTED_URLS` immediately below `ALLOWED_URLS`. The generated Tampermonkey script places editable `trustedUrls` immediately below `allowedUrls` and before the embedded native payload. Version 0.3.22 trusts `localhost`, `geekbar.xyz`, and their matching subdomains. The Trust Lab page gate, target/active WebSocket gate, mobile-identity join claim, culling sweep, and destructive probes all derive from that single list.
 
 | Setting | Behavior |
 | --- | --- |
-| Mobile identity (rejoin) | Reports a mobile client on the next match join to test server handling of the client-provided mobile flag. |
 | Culling sweep | Alternates portrait input to test the server's portrait/landscape object-culling boundary. |
 | Input diagnostics | Displays target state, eligible-target count, movement/fire flags, aim direction/range, and Trust Lab claims. |
 | Selected probe | Chooses one read-only or destructive probe. Destructive probe names begin with `!`. |
