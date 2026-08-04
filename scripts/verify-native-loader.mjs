@@ -45,4 +45,9 @@ if (!buildScript.includes('native-dist/survev-native-client.js')) {
 if (!buildScript.includes('dist/survevgpt-local.user.js')) {
     throw new Error('Established Tampermonkey install entry point must receive the native build.');
 }
+const trustedDeclaration = buildScript.indexOf('const trustedUrls =');
+const payloadDeclaration = buildScript.indexOf('const payload =');
+if (trustedDeclaration < 0 || payloadDeclaration < 0 || trustedDeclaration > payloadDeclaration) {
+    throw new Error('Editable trustedUrls must be declared before the embedded native payload.');
+}
 console.log('Native Tampermonkey loader verification passed.');

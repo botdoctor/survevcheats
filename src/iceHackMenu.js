@@ -81,7 +81,7 @@ const reproductions = document.createElement('section');
 reproductions.className = 'survevgpt-reproductions';
 reproductions.innerHTML = `
     <h3>Controlled reproductions</h3>
-    <p>These affect the current localhost match. Destructive actions require confirmation.</p>
+    <p>These affect only matches authorized by Trusted URLs. Destructive actions require confirmation.</p>
 `;
 
 const actionDefinitions = [
@@ -98,10 +98,10 @@ for (const [label, action, destructive] of actionDefinitions) {
     button.className = destructive ? 'is-destructive' : '';
     button.textContent = label;
     button.addEventListener('click', () => {
-        if (destructive && !confirm(`${label} may terminate the current localhost match. Continue?`)) return;
+        if (destructive && !confirm(`${label} may terminate the current trusted match. Continue?`)) return;
         try {
             const result = researchActions[action]();
-            root.querySelector('footer').textContent = result || `${label} sent to localhost.`;
+            root.querySelector('footer').textContent = result || `${label} sent to the trusted match.`;
         } catch (error) {
             root.querySelector('footer').textContent = error.message;
         }
@@ -160,5 +160,5 @@ setInterval(() => {
     const missing = status.filter((patch) => !patch.matched);
     root.querySelector('footer').textContent = missing.length
         ? `${missing.length}/${status.length} client patches missing — check the console.`
-        : `${status.length}/${status.length} client patches applied · localhost enforced`;
+        : `${status.length}/${status.length} client patches applied · Trusted URLs enforced`;
 }, 1000);

@@ -31,11 +31,11 @@ const buildInfo = Object.freeze({ version: packageJson.version, revision });
 const output = `${renderNativeMetadata(packageJson.version)}
 
 (() => {
-    const payload = ${JSON.stringify(payload)};
-    const buildInfo = ${JSON.stringify(buildInfo)};
     const allowedUrls = ${JSON.stringify(ALLOWED_URLS)};
     const trustedUrls = ${JSON.stringify(TRUSTED_URLS)};
     const urlPolicy = Object.freeze({ allowedUrls, trustedUrls });
+    const buildInfo = ${JSON.stringify(buildInfo)};
+    const payload = ${JSON.stringify(payload)};
     const storage = {
         get: (key) => GM_getValue(key),
         set: (key, value) => GM_setValue(key, value),
