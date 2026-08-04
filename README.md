@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.23. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.24. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -39,7 +39,7 @@ This section tracks the controls in GeekMenu 0.3.23. When a menu option is added
 | Aimbot enabled | Aims an equipped gun at the best eligible enemy. It remains inactive for fists, melee weapons, throwables, and consumables. |
 | Profile | `Default` uses a 260-pixel FOV, 200-unit range, crosshair priority, and no prediction. `OP` uses a 1500-pixel FOV, 1000-unit range, sticky distance priority, and prediction. `Custom` uses the individual settings below. Default and OP only aim while firing. |
 | Aim while firing | In Custom profile, only acquire and track while primary fire is requested. |
-| Trigger mode | While left click is held, forwards fire only when Aimbot has a reachable target. It suppresses fire when no target qualifies and resumes when one does. This is a held-fire gate, unlike Triggerbot. |
+| Trigger mode | While left click is held, forwards fire only when Aimbot has a reachable target. It suppresses fire when no target qualifies and resumes when one does. This is a held-fire gate, unlike Triggerbot. Flare guns bypass all aimbot and trigger gating. |
 | Predictive aim | In Custom profile, tracks and smooths motion across network updates, compensates for snapshot age and measured latency, and solves an intercept using perk-adjusted bullet speed and range. Direction reversals reset the smoothing quickly. OP always enables this behavior. |
 | Aim at downed | Allows downed enemies in every profile. Standing enemies always occupy a higher target tier, so a reachable standing enemy wins over every downed enemy regardless of priority score or shot-path type. |
 | Triggerbot | Automatically aims and fires whenever an eligible target is acquired; left click is not required. |
@@ -53,7 +53,7 @@ This section tracks the controls in GeekMenu 0.3.23. When a menu option is added
 | Aim range | Custom-profile maximum world distance, from 10 to 1000 units. The equipped bullet's shorter physical range still wins. |
 | Priority | Custom-profile target scoring: closest to the crosshair, shortest world distance, or lowest health. |
 
-Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target must be an enemy within the selected FOV and configured aim range, within the equipped gun's actual bullet distance, and on a compatible layer. Clear direct shots always win. When enabled, intact windows are a second-priority soft-cover path; weapon damage, obstacle multiplier, falloff, AP-round multiplier, window health, and remaining health determine the break-round estimate. Ricochet is a bounded final fallback that validates both legs against obstacles and intervening players, rejects edge and shallow-angle solutions, and extends predictive lead for the reflected path's additional flight time.
+Aimbot, Trigger mode, and Triggerbot use the same muzzle-aware reachability solver. It accounts for barrel length, lateral barrel offset, alternating dual-wield hands, and muzzle clipping against nearby obstacles. A target must be an enemy within the selected FOV and configured aim range, within the equipped gun's actual muzzle-to-target bullet distance, and on a compatible layer. Clear direct shots always win. When enabled, intact windows are a second-priority soft-cover path; weapon damage, obstacle multiplier, falloff, AP-round multiplier, window health, and remaining health determine the break-round estimate. Ricochet is a bounded final fallback that validates both legs from the muzzle against obstacles and intervening players, rejects edge and shallow-angle solutions, and extends predictive lead for the reflected path's additional flight time.
 
 ### Combat
 
@@ -71,7 +71,7 @@ Aimbot, Trigger mode, and Triggerbot use the same reachability solver. A target 
 
 | Setting | Behavior |
 | --- | --- |
-| Auto pickup | Requests pickup for the nearest eligible item. Empty primary or secondary gun slots are filled first. A melee weapon is collected only while the melee slot still contains fists, so an owned melee is never automatically replaced. Cosmetic outfits and colored clothing are always ignored. |
+| Auto pickup | Requests pickup for the nearest eligible item. Empty primary or secondary gun slots are filled first. Picking up a second matching dual-capable single weapon is always allowed so the server can combine the pair into its dual-wield form. A melee weapon is collected only while the melee slot still contains fists, so an owned melee is never automatically replaced. Cosmetic outfits and colored clothing are always ignored. |
 | Upgrade guns | With both gun slots filled, only picks up a gun whose damage, fire rate, range, and spread score is at least 8% better than the active gun. |
 | Pickup supplies | Allows Auto pickup to collect useful non-gun loot, including helmets, armor, backpacks, scopes, ammo, healing items, and throwables. Disable it for gun-only automatic pickup. Cosmetic outfits remain excluded. |
 | Auto heal | Uses a healthkit when available, otherwise a bandage, when health is at or below the configured threshold and no other action is active. |
