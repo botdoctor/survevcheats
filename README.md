@@ -30,7 +30,7 @@ GeekMenu groups every control into expandable Aimbot, Combat, Automation, Visual
 
 ## Feature reference
 
-This section tracks the controls in GeekMenu 0.3.26. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
+This section tracks the controls in GeekMenu 0.3.27. When a menu option is added, removed, or changes behavior, this reference should be updated in the same release.
 
 ### Aimbot
 
@@ -40,7 +40,7 @@ This section tracks the controls in GeekMenu 0.3.26. When a menu option is added
 | Profile | `Default` uses a 260-pixel FOV, 200-unit range, crosshair priority, and no prediction. `OP` uses a 1500-pixel FOV, 1000-unit range, sticky distance priority, and prediction. `Custom` uses the individual settings below. Default and OP only aim while firing. |
 | Aim while firing | In Custom profile, only acquire and track while primary fire is requested. |
 | Trigger mode | While left click is held, forwards fire only when Aimbot has a reachable target. It suppresses fire when no target qualifies and resumes when one does. This is a held-fire gate, unlike Triggerbot. Flare guns bypass all aimbot and trigger gating. |
-| Predictive aim | In Custom profile, tracks and smooths motion across network updates, compensates for snapshot age and measured latency, and solves an intercept using perk-adjusted bullet speed and range. Direction reversals reset the smoothing quickly. OP always enables this behavior. |
+| Predictive aim | In Custom profile, tracks smoothed velocity and acceleration across network updates, compensates for snapshot age and measured latency, and iteratively solves an intercept using perk-adjusted bullet speed and range. Direction reversals reset the motion model quickly. OP always enables this behavior. |
 | Aim at downed | Allows downed enemies in every profile. Standing enemies always occupy a higher target tier, so a reachable standing enemy wins over every downed enemy regardless of priority score or shot-path type. |
 | Melee mode | With Aimbot enabled and a melee equipped, begins tracking an eligible enemy 0.8 world units outside the equipped weapon's scaled attack reach. It aims using the server-style attack offset and radius, and attacks automatically only when the target overlaps the actual melee hit circle with no blocking obstacle. |
 | Triggerbot | Automatically aims and fires whenever an eligible target is acquired; left click is not required. |
@@ -52,9 +52,11 @@ This section tracks the controls in GeekMenu 0.3.26. When a menu option is added
 | Reflector distance | Limits the reflector search radius from 10 to 500 world units. Only the nearest 12 eligible reflectors are considered. |
 | Aim FOV | Custom-profile acquisition radius around the cursor, from 20 to 1500 screen pixels. |
 | Aim range | Custom-profile maximum world distance, from 10 to 1000 units. The equipped bullet's shorter physical range still wins. |
-| Priority | Custom-profile target scoring: closest to the crosshair, shortest world distance, or lowest health. |
+| Targeting | Custom-profile targeting mode. `Manual` selects the reachable target nearest the cursor, `Distance` selects the nearest reachable enemy, `Health` prioritizes the lowest estimated health with distance as a tie-breaker, and `Smart` weighs hit confidence, estimated health, distance, cursor proximity, estimated time-to-kill, remaining magazine sufficiency, shot-path quality, and current-target stability. |
 
-Aimbot, Trigger mode, and Triggerbot use the same muzzle-aware reachability solver. It accounts for barrel length, lateral barrel offset, alternating dual-wield hands, and muzzle clipping against nearby obstacles. A target must be an enemy within the selected FOV and configured aim range, within the equipped gun's actual muzzle-to-target bullet distance, and on a compatible layer. Clear direct shots always win. When enabled, intact windows are a second-priority soft-cover path; weapon damage, obstacle multiplier, falloff, AP-round multiplier, window health, and remaining health determine the break-round estimate. Ricochet is a bounded final fallback that validates both legs from the muzzle against obstacles and intervening players, rejects edge and shallow-angle solutions, and extends predictive lead for the reflected path's additional flight time.
+Aimbot, Trigger mode, and Triggerbot use the same muzzle-aware reachability solver. It accounts for barrel length, lateral barrel offset, alternating dual-wield hands, and muzzle clipping against nearby obstacles. A target must be an enemy within the selected FOV and configured aim range, within the equipped gun's actual muzzle-to-target bullet distance, and on a compatible layer. The solver samples exposed points inside the target hit circle when the center is obstructed, so every targeting mode aims at a reachable portion of the player. Clear direct shots always win. When enabled, intact windows are a second-priority soft-cover path; weapon damage, obstacle multiplier, falloff, AP-round multiplier, window health, and remaining health determine the break-round estimate. Ricochet is a bounded final fallback that validates both legs from the muzzle against obstacles and intervening players, rejects edge and shallow-angle solutions, and extends predictive lead for the reflected path's additional flight time.
+
+The server does not disclose opponent health to clients. Health and Smart targeting therefore maintain a conservative estimate from accepted direct-shot paths, observed ammunition consumption, weapon damage and pellet count, and visible chest-armor reduction. The estimate is used only for target ranking and resets with the local match state.
 
 ### Combat
 
